@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block title %}Meu Perfil — Inno-Book{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            <div class="card p-4">
+                <h3 class="fw-bold mb-4">
+                    <i class="bi bi-gear text-primary"></i> Meu Perfil
+                </h3>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Nome</label>
+                            {{ form.first_name }}
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Sobrenome</label>
+                            {{ form.last_name }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Email</label>
+                            {{ form.email }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">CPF</label>
+                            {{ form.cpf }}
+                            <small style="font-size:11px; color:#888; margin-top:4px; display:block;">
+                                Necessário para realizar compras na plataforma.
+                            </small>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Bio</label>
+                            {{ form.bio }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Avatar</label>
+                            {% if user.avatar %}
+                            <div class="mb-2">
+                                <img src="{{ user.avatar.url }}" width="60"
+                                     class="rounded-circle">
+                            </div>
+                            {% endif %}
+                            {{ form.avatar }}
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary w-100 py-2">
+                                Salvar alterações
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

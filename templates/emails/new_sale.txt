@@ -1,0 +1,12 @@
+BookHub — Nova venda!
+
+Olá, {{ order.ebook.author.first_name }}!
+
+Você realizou uma nova venda:
+
+Produto   : {{ order.ebook.title }}
+Comprador : {{ order.buyer_name }}
+Valor     : R$ {{ order.amount }}
+Seu ganho : R$ {{ order.producer_amount }}
+
+Acesse seu painel: http://127.0.0.1:8000/accounts/dashboard/

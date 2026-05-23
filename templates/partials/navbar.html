@@ -1,0 +1,79 @@
+<nav style="background: #1a1a2e; padding: 0;" class="sticky-top">
+    <div class="container">
+        <div class="d-flex align-items-center justify-content-between py-3">
+
+            <!-- Brand -->
+            <a href="{% url 'products:home' %}"
+               style="font-family:'Playfair Display',serif; color:#c9a84c;
+                      font-size:22px; text-decoration:none; letter-spacing:1px;">
+                Inno Book
+            </a>
+
+            <!-- Links centrais -->
+            <div class="d-none d-md-flex align-items-center gap-4">
+                <a href="{% url 'products:list' %}"
+                   style="color:#ccc; font-size:22px; text-decoration:none;
+                          letter-spacing:0.5px; transition:color .2s;"
+                   onmouseover="this.style.color='#c9a84c'"
+                   onmouseout="this.style.color='#ccc'">
+                   Catálogo
+                </a>
+                {% for cat in request.categories|default:'' %}
+                <a href="{% url 'products:category' cat.slug %}"
+                   style="color:#ccc; font-size:22px; text-decoration:none;">
+                   {{ cat.name }}
+                </a>
+                {% endfor %}
+            </div>
+
+            <!-- Ações -->
+            <div class="d-flex align-items-center gap-3">
+                {% if user.is_authenticated %}
+                <div class="dropdown">
+                    <button class="btn-outline-gold dropdown-toggle"
+                            style="padding:7px 18px; font-size:11px;"
+                            data-bs-toggle="dropdown">
+                        {{ user.first_name|default:user.username }}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end"
+                        style="border:0.5px solid #e0d8cc; border-radius:4px;
+                               font-size:13px; min-width:200px;">
+                        <li>
+                            <a class="dropdown-item py-2" href="{% url 'accounts:dashboard' %}">
+                                <i class="bi bi-speedometer2 me-2 text-gold"></i>Dashboard
+                            </a>
+                        </li>
+                        {% if user.is_producer %}
+                        <li>
+                            <a class="dropdown-item py-2" href="{% url 'accounts:producer' %}">
+                                <i class="bi bi-bar-chart me-2 text-gold"></i>Painel do Produtor
+                            </a>
+                        </li>
+                        {% endif %}
+                        <li>
+                            <a class="dropdown-item py-2" href="{% url 'accounts:profile' %}">
+                                <i class="bi bi-gear me-2 text-gold"></i>Perfil
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item py-2 text-danger" href="{% url 'accounts:logout' %}">
+                                <i class="bi bi-box-arrow-right me-2"></i>Sair
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                {% else %}
+                <a href="{% url 'accounts:login' %}"
+                   style="color:#ccc; font-size:13px; text-decoration:none; letter-spacing:0.5px;">
+                   Entrar
+                </a>
+                <a href="{% url 'accounts:register' %}" class="btn-gold"
+                   style="padding:8px 20px; font-size:11px;">
+                   Cadastrar
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</nav>

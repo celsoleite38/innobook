@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% block title %}Painel do Produtor — Inno-Book{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold">
+            <i class="bi bi-bar-chart text-primary"></i> Painel do Produtor
+        </h2>
+        <a href="{% url 'accounts:ebook_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Novo eBook
+        </a>
+    </div>
+
+    <!-- Cards de estatísticas -->
+    <div class="row g-3 mb-5">
+        <div class="col-md-4">
+            <div class="card text-center p-4">
+                <i class="bi bi-book text-primary" style="font-size:2rem;"></i>
+                <h3 class="fw-bold mt-2">{{ ebooks.count }}</h3>
+                <small class="text-muted">eBooks cadastrados</small>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center p-4">
+                <i class="bi bi-bag-check text-success" style="font-size:2rem;"></i>
+                <h3 class="fw-bold mt-2">{{ stats.total_orders|default:0 }}</h3>
+                <small class="text-muted">Vendas realizadas</small>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center p-4">
+                <i class="bi bi-cash-coin text-warning" style="font-size:2rem;"></i>
+                <h3 class="fw-bold mt-2">
+                    R$ {{ stats.total_revenue|default:"0.00" }}
+                </h3>
+                <small class="text-muted">Receita total</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vendas por eBook -->
+    {% if sales_per_ebook %}
+    <div class="card mb-5">
+        <div class="card-header fw-bold">
+            <i class="bi bi-graph-up"></i> Vendas por eBook
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>eBook</th>
+                        <th class="text-center">Vendas</th>
+                        <th class="text-end">Receita</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sale in sales_per_ebook %}
+                    <tr>
+                        <td class="fw-semibold">{{ sale.ebook__title }}</td>
+                        <td class="text-center">
+                            <span class="badge bg-primary">{{ sale.total }}</span>
+                        </td>
+                        <td class="text-end text-success fw-bold">
+                            R$ {{ sale.revenue }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Lista de eBooks -->
+    <h4 class="fw-bold mb-3"><i class="bi bi-book"></i> Meus eBooks</h4>
+    {% if ebooks %}
+    <div class="row g-4">
+        {% for ebook in ebooks %}
+        <div class="col-md-6">
+            <div class="card p-3 d-flex flex-row gap-3">
+                {% if ebook.cover %}
+                <img src="{{ ebook.cover.url }}" width="70" height="95"
+                     style="object-fit:cover; border-radius:4px; flex-shrink:0;">
+                {% endif %}
+                <div class="flex-grow-1">
+                    <h6 class="fw-bold mb-1">{{ ebook.title }}</h6>
+                    <div class="mb-2">
+                        <span class="badge
+                            {% if ebook.status == 'published' %}bg-success
+                            {% elif ebook.status == 'pending' %}bg-warning text-dark
+                            {% elif ebook.status == 'rejected' %}bg-danger
+                            {% else %}bg-secondary{% endif %}">
+                            {{ ebook.get_status_display }}
+                        </span>
+                    </div>
+                    <small class="text-muted">R$ {{ ebook.price }}</small>
+                </div>
+                <div class="d-flex flex-column gap-1">
+                    <a href="{% url 'accounts:ebook_edit' ebook.pk %}"
+                       class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    {% if ebook.is_published %}
+                    <a href="{% url 'products:detail' ebook.slug %}"
+                       class="btn btn-outline-secondary btn-sm" target="_blank">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-5">
+        <i class="bi bi-book-x" style="font-size:3rem;"></i>
+        <p class="mt-3">Você ainda não cadastrou nenhum eBook.</p>
+        <a href="{% url 'accounts:ebook_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus"></i> Cadastrar primeiro eBook
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

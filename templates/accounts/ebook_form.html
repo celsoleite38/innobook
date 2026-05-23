@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} — Inno-Book{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card p-4">
+                <h3 class="fw-bold mb-4">
+                    <i class="bi bi-book-half text-primary"></i> {{ title }}
+                </h3>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="row g-3">
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Título *</label>
+                            {{ form.title }}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Descrição *</label>
+                            {{ form.description }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Categoria</label>
+                            {{ form.category }}
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Idioma</label>
+                            {{ form.language }}
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Páginas</label>
+                            {{ form.pages }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                Preço (R$) *
+                            </label>
+                            {{ form.price }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                Preço promocional (R$)
+                            </label>
+                            {{ form.discount_price }}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">
+                                Capa do eBook *
+                            </label>
+                            {% if ebook.cover %}
+                            <div class="mb-2">
+                                <img src="{{ ebook.cover.url }}" height="80"
+                                     class="rounded">
+                            </div>
+                            {% endif %}
+                            {{ form.cover }}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">
+                                Arquivo PDF *
+                                <span class="text-muted fw-normal">
+                                    (arquivo protegido, nunca público)
+                                </span>
+                            </label>
+                            {% if ebook.file %}
+                            <div class="alert alert-success py-2 mb-2">
+                                <i class="bi bi-file-check"></i>
+                                Arquivo já enviado. Envie outro para substituir.
+                            </div>
+                            {% endif %}
+                            {{ form.file }}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">
+                                Preview gratuito
+                                <span class="text-muted fw-normal">
+                                    (primeiras páginas — opcional)
+                                </span>
+                            </label>
+                            {{ form.preview }}
+                        </div>
+
+                        {% if form.errors %}
+                        <div class="col-12">
+                            <div class="alert alert-danger">
+                                Corrija os erros abaixo antes de continuar.
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="col-12 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary px-5">
+                                <i class="bi bi-check-lg"></i> Salvar
+                            </button>
+                            <a href="{% url 'accounts:producer' %}"
+                               class="btn btn-outline-secondary">
+                                Cancelar
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

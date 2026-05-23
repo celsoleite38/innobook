@@ -1,0 +1,14 @@
+BookHub — Compra confirmada!
+
+Olá, {{ order.buyer_name }}!
+
+Sua compra foi confirmada. Aqui estão os detalhes:
+
+Produto : {{ order.ebook.title }}
+Valor   : R$ {{ order.amount }}
+Pedido  : #{{ order.order_id }}
+
+Acesse seu dashboard para baixar o eBook:
+http://127.0.0.1:8000/accounts/dashboard/
+
+Obrigado por comprar na BookHub!

@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% block title %}Checkout — {{ ebook.title }}{% endblock %}
+
+{% block content %}
+
+<section style="background:#1a1a2e; padding:32px 0;">
+    <div class="container">
+        <p style="color:#c9a84c; font-size:11px; letter-spacing:3px;
+                  text-transform:uppercase; margin-bottom:8px;">
+            Finalizar compra
+        </p>
+        <h1 style="font-family:'Playfair Display',serif; color:#f5f0e8;
+                   font-size:28px; font-weight:600; margin:0;">
+            Checkout
+        </h1>
+    </div>
+</section>
+
+<section class="py-5 bg-cream">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-7 col-lg-6">
+
+                <!-- Resumo do produto -->
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:1.5rem; margin-bottom:1.5rem;">
+                    <p style="font-size:11px; letter-spacing:2px; text-transform:uppercase;
+                               color:#c9a84c; margin-bottom:12px;">
+                        Resumo do pedido
+                    </p>
+                    <div class="d-flex gap-3 align-items-center">
+                        {% if ebook.cover %}
+                        <img src="{{ ebook.cover.url }}" width="65" height="85"
+                             style="object-fit:cover; border-radius:4px;
+                                    box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+                        {% else %}
+                        <div style="width:65px; height:85px; background:#1a1a2e;
+                                    border-radius:4px; display:flex;
+                                    align-items:center; justify-content:center;
+                                    font-size:1.8rem;">📚</div>
+                        {% endif %}
+                        <div class="flex-grow-1">
+                            <p style="font-family:'Playfair Display',serif;
+                                      font-size:15px; font-weight:600;
+                                      color:#1a1a2e; margin-bottom:4px;">
+                                {{ ebook.title }}
+                            </p>
+                            <p style="font-size:12px; color:#888; margin-bottom:6px;">
+                                {{ ebook.author.get_full_name|default:ebook.author.username }}
+                            </p>
+                            <p style="font-size:20px; color:#c9a84c;
+                                      font-weight:500; margin:0;">
+                                R$ {{ ebook.get_price }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Método de pagamento -->
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:1.5rem;">
+                    <p style="font-size:11px; letter-spacing:2px; text-transform:uppercase;
+                               color:#c9a84c; margin-bottom:16px;">
+                        Método de pagamento
+                    </p>
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <!-- Método de pagamento -->
+                        <div class="row g-2 mb-4">
+                            <div class="col-4">
+                                <input type="radio" class="btn-check"
+                                    name="billing_type" id="pix" value="PIX" checked>
+                                <label class="d-block text-center p-3" for="pix"
+                                    style="border:0.5px solid #e0d8cc; border-radius:4px;
+                                            cursor:pointer; transition:all .2s; font-size:12px;">
+                                    <i class="bi bi-qr-code d-block mb-1 text-gold"
+                                    style="font-size:22px;"></i>PIX
+                                </label>
+                            </div>
+                            <div class="col-4">
+                                <input type="radio" class="btn-check"
+                                    name="billing_type" id="credit" value="CREDIT_CARD">
+                                <label class="d-block text-center p-3" for="credit"
+                                    style="border:0.5px solid #e0d8cc; border-radius:4px;
+                                            cursor:pointer; transition:all .2s; font-size:12px;">
+                                    <i class="bi bi-credit-card d-block mb-1 text-gold"
+                                    style="font-size:22px;"></i>Cartão
+                                </label>
+                            </div>
+                            <div class="col-4">
+                                <input type="radio" class="btn-check"
+                                    name="billing_type" id="boleto" value="BOLETO">
+                                <label class="d-block text-center p-3" for="boleto"
+                                    style="border:0.5px solid #e0d8cc; border-radius:4px;
+                                            cursor:pointer; transition:all .2s; font-size:12px;">
+                                    <i class="bi bi-upc-scan d-block mb-1 text-gold"
+                                    style="font-size:22px;"></i>Boleto
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Campos do cartão (ocultos por padrão) -->
+                        <div id="card-fields" style="display:none; margin-bottom:1rem;">
+                            <div style="border-top:0.5px solid #e0d8cc; padding-top:1rem; margin-bottom:1rem;">
+                                <p style="font-size:11px; letter-spacing:1px; text-transform:uppercase;
+                                        color:#c9a84c; margin-bottom:12px;">
+                                    Dados do cartão
+                                </p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Nome no cartão</label>
+                                <input type="text" name="holder_name" class="form-control"
+                                    placeholder="Como está no cartão">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Número do cartão</label>
+                                <input type="text" name="card_number" class="form-control"
+                                    placeholder="0000 0000 0000 0000" maxlength="19">
+                            </div>
+                            <div class="row g-2 mb-3">
+                                <div class="col-4">
+                                    <label class="form-label">Mês</label>
+                                    <input type="text" name="expiry_month" class="form-control"
+                                        placeholder="MM" maxlength="2">
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label">Ano</label>
+                                    <input type="text" name="expiry_year" class="form-control"
+                                        placeholder="AAAA" maxlength="4">
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label">CVV</label>
+                                    <input type="text" name="ccv" class="form-control"
+                                        placeholder="000" maxlength="4">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">CPF do titular</label>
+                                <input type="text" name="cpf" class="form-control"
+                                    placeholder="000.000.000-00">
+                            </div>
+                            <div class="row g-2 mb-3">
+                                <div class="col-7">
+                                    <label class="form-label">CEP</label>
+                                    <input type="text" name="postal_code" class="form-control"
+                                        placeholder="00000-000">
+                                </div>
+                                <div class="col-5">
+                                    <label class="form-label">Número</label>
+                                    <input type="text" name="address_number" class="form-control"
+                                        placeholder="123">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Total -->
+                        <div style="border-top:0.5px solid #e0d8cc; padding-top:16px; margin-bottom:20px;">
+                            <div class="d-flex justify-content-between align-items-baseline">
+                                <span style="font-size:13px; color:#888; text-transform:uppercase;
+                                            letter-spacing:1px;">Total</span>
+                                <span style="font-family:'Playfair Display',serif; font-size:28px;
+                                            color:#c9a84c; font-weight:600;">
+                                    R$ {{ ebook.get_price }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-gold w-100"
+                                style="padding:14px; font-size:12px; border-radius:4px;">
+                            <i class="bi bi-lock me-2"></i>Confirmar pagamento
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-3"
+                         style="font-size:11px; color:#aaa; letter-spacing:0.3px;">
+                        <i class="bi bi-shield-lock me-1 text-gold"></i>
+                        Pagamento 100% seguro e criptografado
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+
+{% block extra_js %}
+<script>
+const billingInputs = document.querySelectorAll('input[name="billing_type"]');
+const cardFields    = document.getElementById('card-fields');
+
+billingInputs.forEach(input => {
+    input.addEventListener('change', function() {
+        cardFields.style.display = this.value === 'CREDIT_CARD' ? 'block' : 'none';
+
+        document.querySelectorAll('input[name="billing_type"] + label').forEach(l => {
+            l.style.borderColor = '#e0d8cc';
+            l.style.background  = '#fff';
+        });
+        const lbl = this.nextElementSibling;
+        lbl.style.borderColor = '#c9a84c';
+        lbl.style.background  = '#fdf8ee';
+    });
+});
+
+document.querySelector('input[name="billing_type"]:checked')
+    .nextElementSibling.style.borderColor = '#c9a84c';
+document.querySelector('input[name="billing_type"]:checked')
+    .nextElementSibling.style.background  = '#fdf8ee';
+</script>
+{% endblock %}
+
+{% endblock %}

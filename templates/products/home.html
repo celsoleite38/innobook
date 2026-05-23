@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% block title %}Inno Book — Livraria Digital Premium{% endblock %}
+
+{% block content %}
+
+<!-- HERO -->
+<section style="background: #1a1a2e; padding: 80px 0;">
+    <div class="container text-center">
+        <p style="color:#c9a84c; font-size:11px; letter-spacing:3px;
+                  text-transform:uppercase; margin-bottom:12px;">
+            Livraria Digital Premium
+        </p>
+        <div style="width:50px; height:2px; background:#c9a84c; margin:0 auto 20px;"></div>
+        <h1 style="font-family:'Playfair Display',serif; color:#f5f0e8;
+                   font-size:48px; font-weight:600; line-height:1.2; margin-bottom:16px;">
+            Conhecimento é o<br>MAIOR Luxo
+        </h1>
+        <p style="color:#aaa; font-size:15px; max-width:480px;
+                  margin:0 auto 32px; line-height:1.8;">
+            Descubra eBooks cuidadosamente selecionados. Autores renomados,
+            conteúdo exclusivo, experiência premium.
+        </p>
+        <div class="d-flex gap-3 justify-content-center flex-wrap">
+            <a href="{% url 'products:list' %}" class="btn-gold">
+                Explorar catálogo
+            </a>
+            <a href="{% url 'accounts:register' %}" class="btn-outline-gold">
+                Seja um autor
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- CATEGORIAS -->
+{% if categories %}
+<section class="py-4 bg-white">
+    <div class="container">
+        <div class="d-flex gap-2 flex-wrap justify-content-center">
+            <a href="{% url 'products:list' %}" class="cat-pill active">Todos</a>
+            {% for cat in categories %}
+            <a href="{% url 'products:category' cat.slug %}" class="cat-pill">
+                {{ cat.icon }} {{ cat.name }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- EBOOKS EM DESTAQUE -->
+<section class="py-5 bg-cream">
+    <div class="container">
+        <p class="section-label">Seleção especial</p>
+        <div class="elegant-divider">
+            <h2 class="section-title mb-0">eBooks em Destaque</h2>
+        </div>
+
+        {% if ebooks %}
+        <div class="row g-4">
+            {% for ebook in ebooks %}
+            <div class="col-sm-6 col-md-4 col-lg-3">
+                <div class="ebook-card">
+                    <div class="position-relative">
+                        {% if ebook.cover %}
+                        <img src="{{ ebook.cover.url }}"
+                             class="ebook-card-img" alt="{{ ebook.title }}">
+                        {% else %}
+                        <div class="ebook-card-img-placeholder">📚</div>
+                        {% endif %}
+                        {% if ebook.featured %}
+                        <span class="badge-gold position-absolute"
+                              style="top:10px; left:10px;">Destaque</span>
+                        {% endif %}
+                        {% if ebook.discount_price %}
+                        <span class="badge-gold position-absolute"
+                              style="top:10px; right:10px; background:#8b2020;">Promo</span>
+                        {% endif %}
+                    </div>
+                    <div class="ebook-card-body">
+                        {% if ebook.category %}
+                        <div class="ebook-card-cat">{{ ebook.category.name }}</div>
+                        {% endif %}
+                        <div class="ebook-card-title">{{ ebook.title }}</div>
+                        <div class="ebook-card-author">
+                            {{ ebook.author.get_full_name|default:ebook.author.username }}
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="ebook-price">R$ {{ ebook.get_price }}</span>
+                            <a href="{% url 'products:detail' ebook.slug %}"
+                               class="btn-navy" style="padding:6px 16px; font-size:10px;">
+                               Ver mais
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="text-center mt-5">
+            <a href="{% url 'products:list' %}" class="btn-outline-gold">
+                Ver todos os eBooks
+            </a>
+        </div>
+        {% else %}
+        <div class="text-center py-5" style="color:#aaa;">
+            <i class="bi bi-book" style="font-size:3rem; color:#c9a84c;"></i>
+            <p class="mt-3" style="font-family:'Playfair Display',serif; font-size:18px;">
+                Em breve novidades
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- DIFERENCIAIS -->
+<section class="py-5 bg-white">
+    <div class="container">
+        <p class="section-label">Por que nos escolher</p>
+        <div class="elegant-divider">
+            <h2 class="section-title mb-0">Experiência Premium</h2>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <h5 class="font-serif mb-2">Compra Segura</h5>
+                    <p style="font-size:13px; color:#888; line-height:1.7; margin:0;">
+                        Pagamento criptografado via MercadoPago.
+                        Seus dados sempre protegidos.
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-infinity"></i>
+                    </div>
+                    <h5 class="font-serif mb-2">Acesso Vitalício</h5>
+                    <p style="font-size:13px; color:#888; line-height:1.7; margin:0;">
+                        Baixe quando quiser, quantas vezes precisar.
+                        Seu eBook, para sempre.
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-lightning-charge"></i>
+                    </div>
+                    <h5 class="font-serif mb-2">Download Imediato</h5>
+                    <p style="font-size:13px; color:#888; line-height:1.7; margin:0;">
+                        Acesso instantâneo após confirmação do pagamento.
+                        Sem esperas.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA FINAL -->
+<section style="background:#1a1a2e; padding:60px 0;">
+    <div class="container text-center">
+        <p style="color:#c9a84c; font-size:11px; letter-spacing:3px;
+                  text-transform:uppercase; margin-bottom:12px;">
+            Compartilhe seu conhecimento
+        </p>
+        <div style="width:50px; height:2px; background:#c9a84c; margin:0 auto 20px;"></div>
+        <h2 style="font-family:'Playfair Display',serif; color:#f5f0e8;
+                   font-size:32px; font-weight:600; margin-bottom:12px;">
+            Você também pode ser um autor
+        </h2>
+        <p style="color:#aaa; font-size:14px; max-width:400px;
+                  margin:0 auto 28px; line-height:1.8;">
+            Publique seu eBook na Inno Book e alcance milhares de leitores.
+            Você recebe 90% de cada venda.
+        </p>
+        <a href="{% url 'accounts:register' %}" class="btn-gold">
+            Quero publicar meu eBook
+        </a>
+    </div>
+</section>
+
+{% endblock %}

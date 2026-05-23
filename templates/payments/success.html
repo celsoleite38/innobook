@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Compra realizada! — BookHub{% endblock %}
+
+{% block content %}
+<section class="py-5 bg-cream" style="min-height:80vh; display:flex; align-items:center;">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:3rem; text-align:center;">
+
+                    <div style="width:80px; height:80px; background:#1a1a2e;
+                                border-radius:50%; display:flex; align-items:center;
+                                justify-content:center; margin:0 auto 1.5rem;">
+                        <i class="bi bi-check-lg text-gold"
+                           style="font-size:36px;"></i>
+                    </div>
+
+                    <p style="color:#c9a84c; font-size:11px; letter-spacing:3px;
+                              text-transform:uppercase; margin-bottom:8px;">
+                        Pedido confirmado
+                    </p>
+                    <h2 style="font-family:'Playfair Display',serif; font-size:28px;
+                               font-weight:600; color:#1a1a2e; margin-bottom:8px;">
+                        Compra realizada!
+                    </h2>
+                    <p style="font-size:14px; color:#888; margin-bottom:2rem;
+                              line-height:1.7;">
+                        Obrigado, <strong style="color:#1a1a2e;">{{ order.buyer_name }}</strong>!<br>
+                        Seu eBook está pronto para download.
+                    </p>
+
+                    <!-- Detalhes do pedido -->
+                    <div style="background:#f9f6f0; border-radius:4px; padding:1rem;
+                                margin-bottom:1.5rem; text-align:left;">
+                        <div style="font-size:11px; letter-spacing:1px;
+                                    text-transform:uppercase; color:#c9a84c;
+                                    margin-bottom:8px;">
+                            Detalhes
+                        </div>
+                        <p style="font-family:'Playfair Display',serif; font-size:15px;
+                                  font-weight:600; color:#1a1a2e; margin-bottom:4px;">
+                            {{ order.ebook.title }}
+                        </p>
+                        <div style="font-size:12px; color:#888;">
+                            Valor: <strong style="color:#1a1a2e;">R$ {{ order.amount }}</strong>
+                            &nbsp;·&nbsp;
+                            Pedido: <strong style="color:#1a1a2e;">#{{ order.order_id|stringformat:"s"|slice:":8" }}...</strong>
+                        </div>
+                    </div>
+
+                    {% if token %}
+                    <a href="{% url 'delivery:download' token.token %}"
+                       class="btn-gold d-block mb-3"
+                       style="padding:14px; font-size:12px; text-align:center;">
+                        <i class="bi bi-download me-2"></i>Baixar eBook agora
+                    </a>
+                    {% endif %}
+
+                    <a href="{% url 'accounts:dashboard' %}"
+                       class="btn-outline-gold d-block"
+                       style="padding:12px; font-size:11px; text-align:center;">
+                        <i class="bi bi-speedometer2 me-2"></i>Ir para o Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

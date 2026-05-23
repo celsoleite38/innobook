@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; }
+        .container { max-width: 600px; margin: 30px auto; background: #fff;
+                     border-radius: 8px; overflow: hidden; }
+        .header { background: #28a745; padding: 30px; text-align: center; }
+        .header h1 { color: #fff; margin: 0; }
+        .body { padding: 30px; }
+        .box { background: #f8f9fa; border-radius: 8px; padding: 16px; margin: 20px 0; }
+        .footer { background: #f4f4f4; padding: 20px; text-align: center;
+                  color: #999; font-size: 12px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🎉 Nova venda!</h1>
+    </div>
+    <div class="body">
+        <h2>Parabéns, {{ order.ebook.author.first_name }}!</h2>
+        <p>Você acaba de realizar uma nova venda na BookHub!</p>
+
+        <div class="box">
+            <strong>{{ order.ebook.title }}</strong><br><br>
+            <small style="color:#666;">
+                Comprador : {{ order.buyer_name }}<br>
+                Valor total: R$ {{ order.amount }}<br>
+                Seu ganho  : R$ {{ order.producer_amount }}<br>
+                Data       : {{ order.paid_at|date:"d/m/Y H:i" }}
+            </small>
+        </div>
+
+        <p>Acesse seu painel para ver todos os detalhes das suas vendas.</p>
+    </div>
+    <div class="footer">© BookHub</div>
+</div>
+</body>
+</html>

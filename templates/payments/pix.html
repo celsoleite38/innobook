@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% block title %}Pagamento PIX — BookHub{% endblock %}
+
+{% block content %}
+<section style="background:#1a1a2e; padding:32px 0;">
+    <div class="container">
+        <p style="color:#c9a84c; font-size:11px; letter-spacing:3px;
+                  text-transform:uppercase; margin-bottom:8px;">
+            Finalizar pagamento
+        </p>
+        <h1 style="font-family:'Playfair Display',serif; color:#f5f0e8;
+                   font-size:28px; font-weight:600; margin:0;">
+            Pague com PIX
+        </h1>
+    </div>
+</section>
+
+<section class="py-5 bg-cream">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:2rem; text-align:center;">
+
+                    <!-- Status -->
+                    <div id="status-box">
+                        <div style="width:64px; height:64px; background:#1a1a2e;
+                                    border-radius:50%; display:flex; align-items:center;
+                                    justify-content:center; margin:0 auto 1rem;">
+                            <i class="bi bi-qr-code text-gold" style="font-size:28px;"></i>
+                        </div>
+                        <p style="color:#c9a84c; font-size:11px; letter-spacing:2px;
+                                  text-transform:uppercase; margin-bottom:6px;">
+                            Aguardando pagamento
+                        </p>
+                        <h4 style="font-family:'Playfair Display',serif; color:#1a1a2e;
+                                   font-size:20px; margin-bottom:4px;">
+                            R$ {{ order.amount }}
+                        </h4>
+                        <p style="font-size:13px; color:#888; margin-bottom:1.5rem;">
+                            {{ order.ebook.title }}
+                        </p>
+                    </div>
+
+                    <!-- QR Code -->
+                    {% if pix.encodedImage %}
+                    <img src="data:image/png;base64,{{ pix.encodedImage }}"
+                         style="width:220px; height:220px; margin-bottom:1.5rem;
+                                border:4px solid #f9f6f0; border-radius:4px;">
+                    {% endif %}
+
+                    <!-- Copia e Cola -->
+                    {% if pix.payload %}
+                    <div style="margin-bottom:1.5rem;">
+                        <p style="font-size:11px; letter-spacing:1px; text-transform:uppercase;
+                                   color:#888; margin-bottom:8px;">
+                            Ou copie o código PIX
+                        </p>
+                        <div style="display:flex; gap:8px;">
+                            <input id="pix-code" type="text"
+                                   value="{{ pix.payload }}"
+                                   readonly
+                                   class="form-control"
+                                   style="font-size:11px; color:#888;">
+                            <button onclick="copyPix()"
+                                    class="btn-gold flex-shrink-0"
+                                    style="padding:8px 16px; font-size:11px; white-space:nowrap;">
+                                Copiar
+                            </button>
+                        </div>
+                        <p id="copy-msg" style="font-size:12px; color:#2d5a2d;
+                                                display:none; margin-top:6px;">
+                            ✓ Código copiado!
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Instruções -->
+                    <div style="background:#f9f6f0; border-radius:4px; padding:1rem;
+                                text-align:left; margin-bottom:1.5rem;">
+                        <p style="font-size:11px; letter-spacing:1px; text-transform:uppercase;
+                                   color:#c9a84c; margin-bottom:8px;">
+                            Como pagar
+                        </p>
+                        <ol style="font-size:13px; color:#555; margin:0; padding-left:16px;
+                                   line-height:2;">
+                            <li>Abra o app do seu banco</li>
+                            <li>Escolha pagar via PIX</li>
+                            <li>Escaneie o QR Code ou cole o código</li>
+                            <li>Confirme o pagamento</li>
+                        </ol>
+                    </div>
+
+                    <!-- Verificação automática -->
+                    <div id="checking"
+                         style="font-size:13px; color:#888; margin-bottom:1rem;">
+                        <i class="bi bi-arrow-repeat me-2"
+                           style="animation:spin 1s linear infinite; display:inline-block;">
+                        </i>
+                        Verificando pagamento automaticamente...
+                    </div>
+
+                    <p style="font-size:11px; color:#aaa;">
+                        O PIX expira em <strong>24 horas</strong>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% block extra_js %}
+<style>
+    @keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+</style>
+<script>
+const chargeId  = '{{ charge_id }}';
+const checkUrl  = '{% url "payments:check_pix" "CHARGE_ID" %}'.replace('CHARGE_ID', chargeId);
+let   attempts  = 0;
+const maxChecks = 120; // 10 minutos
+
+function copyPix() {
+    const code = document.getElementById('pix-code');
+    code.select();
+    navigator.clipboard.writeText(code.value).then(() => {
+        document.getElementById('copy-msg').style.display = 'block';
+        setTimeout(() => document.getElementById('copy-msg').style.display = 'none', 3000);
+    });
+}
+
+async function checkPayment() {
+    if (attempts >= maxChecks) {
+        document.getElementById('checking').innerHTML =
+            '<i class="bi bi-clock me-2"></i>Tempo esgotado. <a href="{% url \'accounts:dashboard\' %}">Ver dashboard</a>';
+        return;
+    }
+    attempts++;
+    try {
+        const res  = await fetch(checkUrl);
+        const data = await res.json();
+        if (data.paid) {
+            document.getElementById('checking').innerHTML =
+                '<i class="bi bi-check-circle me-2" style="color:#2d5a2d;"></i>' +
+                '<strong style="color:#2d5a2d;">Pagamento confirmado!</strong> Redirecionando...';
+            setTimeout(() => {
+                window.location.href = '/payments/success/' + data.order_id + '/';
+            }, 1500);
+            return;
+        }
+    } catch(e) { console.log(e); }
+    setTimeout(checkPayment, 5000); // verifica a cada 5 segundos
+}
+
+checkPayment();
+</script>
+{% endblock %}
+
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% block title %}Catálogo — BookHub{% endblock %}
+
+{% block content %}
+
+<section style="background:#1a1a2e; padding:40px 0;">
+    <div class="container">
+        <p style="color:#c9a84c; font-size:11px; letter-spacing:3px;
+                  text-transform:uppercase; margin-bottom:8px;">
+            Explore nossa coleção
+        </p>
+        <h1 style="font-family:'Playfair Display',serif; color:#f5f0e8;
+                   font-size:36px; font-weight:600; margin:0;">
+            Catálogo de eBooks
+        </h1>
+    </div>
+</section>
+
+<section class="py-5 bg-cream">
+    <div class="container">
+
+        <!-- Filtros -->
+        <div style="background:#fff; border:0.5px solid #e0d8cc;
+                    border-radius:6px; padding:1.5rem; margin-bottom:2rem;">
+            <form method="get">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-5">
+                        <label class="form-label">Buscar</label>
+                        <input type="text" name="q" value="{{ q }}"
+                               class="form-control" placeholder="Título, autor...">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Categoria</label>
+                        <select name="categoria" class="form-select">
+                            <option value="">Todas</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.slug }}"
+                                {% if cat_slug == cat.slug %}selected{% endif %}>
+                                {{ cat.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Ordenar</label>
+                        <select name="order" class="form-select">
+                            <option value="-created_at" {% if order == '-created_at' %}selected{% endif %}>Recentes</option>
+                            <option value="price"       {% if order == 'price' %}selected{% endif %}>Menor preço</option>
+                            <option value="-price"      {% if order == '-price' %}selected{% endif %}>Maior preço</option>
+                            <option value="title"       {% if order == 'title' %}selected{% endif %}>A — Z</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn-gold w-100"
+                                style="padding:10px;">
+                            Filtrar
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Grid -->
+        {% if ebooks %}
+        <div class="row g-4">
+            {% for ebook in ebooks %}
+            <div class="col-sm-6 col-md-4 col-lg-3">
+                <div class="ebook-card">
+                    <div class="position-relative">
+                        {% if ebook.cover %}
+                        <img src="{{ ebook.cover.url }}"
+                             class="ebook-card-img" alt="{{ ebook.title }}">
+                        {% else %}
+                        <div class="ebook-card-img-placeholder">📚</div>
+                        {% endif %}
+                        {% if ebook.featured %}
+                        <span class="badge-gold position-absolute"
+                              style="top:10px; left:10px;">Destaque</span>
+                        {% endif %}
+                    </div>
+                    <div class="ebook-card-body">
+                        {% if ebook.category %}
+                        <div class="ebook-card-cat">{{ ebook.category.name }}</div>
+                        {% endif %}
+                        <div class="ebook-card-title">{{ ebook.title }}</div>
+                        <div class="ebook-card-author">
+                            {{ ebook.author.get_full_name|default:ebook.author.username }}
+                        </div>
+                        {% if ebook.discount_price %}
+                        <small style="color:#aaa; text-decoration:line-through;
+                                      font-size:12px;">
+                            R$ {{ ebook.price }}
+                        </small><br>
+                        {% endif %}
+                        <div class="d-flex align-items-center justify-content-between mt-1">
+                            <span class="ebook-price">R$ {{ ebook.get_price }}</span>
+                            <a href="{% url 'products:detail' ebook.slug %}"
+                               class="btn-navy" style="padding:6px 16px; font-size:10px;">
+                               Ver mais
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-search" style="font-size:3rem; color:#c9a84c;"></i>
+            <p class="font-serif mt-3" style="font-size:20px;">
+                Nenhum eBook encontrado
+            </p>
+            <a href="{% url 'products:list' %}" class="btn-outline-gold mt-2">
+                Ver todos
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
