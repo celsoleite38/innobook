@@ -1,3 +1,5 @@
+from urllib import request
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -93,8 +95,7 @@ def checkout_view(request, ebook_id):
         except Exception as e:
             order.delete()
             erro = str(e)
-            # CPF faltando → redireciona para o perfil
-            if 'CPF' in erro:
+            if 'CPF é obrigatório' in erro:
                 messages.warning(
                     request,
                     'Por favor, preencha seu CPF no perfil antes de comprar.'

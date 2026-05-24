@@ -18,12 +18,16 @@ def _url(path):
 # ── Clientes ───────────────────────────────────────────────
 
 def get_or_create_customer(user):
-    """
-    Busca ou cria um cliente no Asaas pelo email.
-    Retorna o customer_id do Asaas.
-    """
 
-    # Busca se já existe
+    cpf_limpo = ''.join(filter(str.isdigit, user.cpf or ''))
+
+    if not cpf_limpo:
+        raise Exception(
+            'CPF é obrigatório para realizar pagamentos. '
+            'Acesse seu perfil e preencha o CPF.'
+        )
+
+    # Busca cliente existente
     response = requests.get(
         _url('/customers'),
         headers=_headers(),
@@ -32,33 +36,61 @@ def get_or_create_customer(user):
     data = response.json()
 
     if data.get('data'):
-        customer = data['data'][0]
+        customer    = data['data'][0]
+        customer_id = customer['id']
 
-        # Atualiza CPF se ainda não tem
-        if not customer.get('cpfCnpj') and user.cpf:
-            cpf_limpo = user.cpf.replace('.', '').replace('-', '').strip()
-            requests.put(
-                _url(f"/customers/{customer['id']}"),
-                headers=_headers(),
-                json={'cpfCnpj': cpf_limpo}
-            )
+        # CPF vazio no Asaas → atualiza
+        if not customer.get('cpfCnpj'):
+            try:
+                put_resp = requests.post(
+                    _url(f'/customers/{customer_id}'),
+                    headers=_headers(),
+                    json={
+                        'name'    : user.get_full_name() or user.username,
+                        'email'   : user.email,
+                        'cpfCnpj' : cpf_limpo,
+                    }
+                )
+                result = put_resp.json()
+                print(f'Atualização CPF: {result}')
 
-        return customer['id']
+                # Se POST não funcionou, deleta e recria
+                if 'id' not in result:
+                    del_resp = requests.delete(
+                        _url(f'/customers/{customer_id}'),
+                        headers=_headers()
+                    )
+                    print(f'Cliente deletado: {del_resp.status_code}')
 
-    # CPF obrigatório para criar
-    if not user.cpf:
-        raise Exception(
-            'CPF é obrigatório para realizar pagamentos. '
-            'Acesse seu perfil e preencha o CPF.'
-        )
+                    new_resp = requests.post(
+                        _url('/customers'),
+                        headers=_headers(),
+                        json={
+                            'name'               : user.get_full_name() or user.username,
+                            'email'              : user.email,
+                            'cpfCnpj'            : cpf_limpo,
+                            'notificationDisabled': False,
+                        }
+                    )
+                    new_customer = new_resp.json()
+                    print(f'Novo cliente: {new_customer}')
 
-    cpf_limpo = user.cpf.replace('.', '').replace('-', '').strip()
+                    if 'id' not in new_customer:
+                        raise Exception(f'Erro ao recriar cliente: {new_customer}')
 
-    # Cria novo cliente
+                    return new_customer['id']
+
+            except Exception as e:
+                print(f'Erro ao atualizar CPF: {e}')
+                raise
+
+        return customer_id
+
+    # Cliente não existe — cria novo
     payload = {
-        'name' : user.get_full_name() or user.username,
-        'email': user.email,
-        'cpfCnpj': cpf_limpo,
+        'name'               : user.get_full_name() or user.username,
+        'email'              : user.email,
+        'cpfCnpj'            : cpf_limpo,
         'notificationDisabled': False,
     }
     response = requests.post(
@@ -67,12 +99,12 @@ def get_or_create_customer(user):
         json=payload
     )
     customer = response.json()
+    print(f'Novo cliente criado: {customer}')
 
     if 'id' not in customer:
         raise Exception(f'Erro ao criar cliente no Asaas: {customer}')
 
     return customer['id']
-
 
 # ── Cobranças ──────────────────────────────────────────────
 

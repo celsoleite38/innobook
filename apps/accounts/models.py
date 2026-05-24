@@ -14,7 +14,7 @@ class User(AbstractUser):
     role   = models.CharField(max_length=20, choices=ROLE_CHOICES, default=BUYER)
     bio    = models.TextField(blank=True)
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
-    cpf    = models.CharField(max_length=11,  # Salva apenas números
+    cpf    = models.CharField(max_length=14,
         #unique=True,
         validators=[
             RegexValidator(
