@@ -10,4 +10,6 @@ urlpatterns = [
     path('failed/',                      views.failed_view,    name='failed'),
     path('pix/check/<str:charge_id>/',   views.check_pix_view, name='check_pix'),
     path('webhook/asaas/',               views.asaas_webhook,  name='webhook'),
+    path('checkout/carrinho/', views.cart_checkout_view, name='cart_checkout'),
+    path('meus-pedidos/', views.my_orders_view, name='my_orders'),
 ]

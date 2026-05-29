@@ -228,3 +228,151 @@ def _confirm_order(order, charge_id):
         send_new_sale_notification(order)
     except Exception as e:
         print(f'Erro email: {e}')
+
+@login_required
+def cart_checkout_view(request):
+    from apps.cart.models import Cart, CartItem
+
+    try:
+        cart = request.user.cart
+    except Exception:
+        messages.error(request, 'Carrinho vazio.')
+        return redirect('cart:cart')
+
+    items = cart.items.select_related('ebook').all()
+
+    if not items:
+        messages.error(request, 'Seu carrinho está vazio.')
+        return redirect('cart:cart')
+
+    # Remove itens já comprados
+    paid_ids = request.user.orders.filter(
+        status='paid'
+    ).values_list('ebook_id', flat=True)
+    items = items.exclude(ebook_id__in=paid_ids)
+
+    if not items:
+        messages.info(request, 'Todos os eBooks já foram comprados!')
+        return redirect('accounts:dashboard')
+
+    total = sum(item.price for item in items)
+
+    if request.method == 'POST':
+        billing_type = request.POST.get('billing_type', 'PIX')
+        orders_criados = []
+
+        try:
+            for item in items:
+                order = Order.objects.create(
+                    buyer       = request.user,
+                    ebook       = item.ebook,
+                    amount      = item.price,
+                    status      = Order.STATUS_PENDING,
+                    gateway     = 'asaas',
+                    buyer_email = request.user.email,
+                    buyer_name  = request.user.get_full_name() or request.user.username,
+                )
+                orders_criados.append(order)
+
+            # Cria UMA cobrança no Asaas com o total
+            # Usamos o primeiro order como referência
+            order_ref = orders_criados[0]
+            order_ref.amount = total
+            order_ref.save()
+
+            card_data = None
+            if billing_type == 'CREDIT_CARD':
+                card_data = {
+                    'holder_name'   : request.POST.get('holder_name'),
+                    'number'        : request.POST.get('card_number', '').replace(' ', ''),
+                    'expiry_month'  : request.POST.get('expiry_month'),
+                    'expiry_year'   : request.POST.get('expiry_year'),
+                    'ccv'           : request.POST.get('ccv'),
+                    'cpf'           : request.POST.get('cpf', ''),
+                    'postal_code'   : request.POST.get('postal_code', ''),
+                    'address_number': request.POST.get('address_number', ''),
+                }
+
+            charge = create_charge(order_ref, billing_type, card_data)
+            order_ref.gateway_order_id = charge['id']
+            order_ref.save()
+
+            # Salva charge_id nos outros pedidos também
+            for order in orders_criados[1:]:
+                order.gateway_order_id = charge['id']
+                order.save()
+
+            Payment.objects.create(
+                order        = order_ref,
+                method       = billing_type.lower(),
+                amount       = total,
+                raw_response = charge,
+            )
+
+            # Limpa o carrinho
+            cart.items.all().delete()
+
+            if billing_type == 'CREDIT_CARD' and charge.get('status') == 'CONFIRMED':
+                for order in orders_criados:
+                    _confirm_order(order, charge['id'])
+                return redirect('payments:success', order_id=order_ref.order_id)
+
+            if billing_type == 'PIX':
+                pix = get_pix_qrcode(charge['id'])
+                return render(request, 'payments/pix.html', {
+                    'order'    : order_ref,
+                    'pix'      : pix,
+                    'charge_id': charge['id'],
+                })
+
+            if billing_type == 'BOLETO':
+                return render(request, 'payments/boleto.html', {
+                    'order' : order_ref,
+                    'charge': charge,
+                })
+
+        except Exception as e:
+            for order in orders_criados:
+                order.delete()
+            erro = str(e)
+            if 'CPF é obrigatório' in erro:
+                messages.warning(request, 'Preencha seu CPF no perfil antes de comprar.')
+                return redirect('accounts:profile')
+            messages.error(request, f'Erro ao processar pagamento: {erro}')
+            return redirect('cart:cart')
+
+    return render(request, 'payments/cart_checkout.html', {
+        'items': items,
+        'total': total,
+    })
+
+@login_required
+def my_orders_view(request):
+    """Página com todos os pedidos do usuário — pagos e pendentes."""
+    from django.utils import timezone
+    from datetime import timedelta
+
+    # Expira pedidos com mais de 24h automaticamente
+    expiry_time = timezone.now() - timedelta(hours=24)
+    request.user.orders.filter(
+        status=Order.STATUS_PENDING,
+        created_at__lt=expiry_time
+    ).update(status=Order.STATUS_CANCELLED)
+
+    paid_orders    = request.user.orders.filter(
+        status=Order.STATUS_PAID
+    ).select_related('ebook').order_by('-paid_at')
+
+    pending_orders = request.user.orders.filter(
+        status=Order.STATUS_PENDING
+    ).select_related('ebook').order_by('-created_at')
+
+    cancelled_orders = request.user.orders.filter(
+        status__in=[Order.STATUS_CANCELLED, Order.STATUS_FAILED]
+    ).select_related('ebook').order_by('-created_at')[:10]
+
+    return render(request, 'payments/my_orders.html', {
+        'paid_orders'     : paid_orders,
+        'pending_orders'  : pending_orders,
+        'cancelled_orders': cancelled_orders,
+    })

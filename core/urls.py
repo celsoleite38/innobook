@@ -9,6 +9,7 @@ urlpatterns = [
     path('accounts/', include('apps.accounts.urls')),
     path('payments/', include('apps.payments.urls')),
     path('delivery/', include('apps.delivery.urls')),
+    path('carrinho/', include('apps.cart.urls')),
 ]
 
 # Servir arquivos de mídia em desenvolvimento

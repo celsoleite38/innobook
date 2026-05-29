@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} — BookHub{% endblock %}
+
+{% block content %}
+<section style="background:#1a1a2e; padding:32px 0;">
+    <div class="container">
+        <p style="color:#c9a84c; font-size:11px; letter-spacing:3px;
+                  text-transform:uppercase; margin-bottom:8px;">
+            {{ ebook.title }}
+        </p>
+        <h1 style="font-family:'Playfair Display',serif; color:#f5f0e8;
+                   font-size:26px; font-weight:600; margin:0;">
+            {{ title }}
+        </h1>
+    </div>
+</section>
+
+<section class="py-5 bg-cream">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-7">
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:2rem;">
+
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="row g-3">
+
+                            <div class="col-12">
+                                <label class="form-label">Título do bônus *</label>
+                                {{ form.title }}
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Descrição</label>
+                                {{ form.description }}
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Capa do bônus</label>
+                                {{ form.cover }}
+                            </div>
+
+                            <!-- Arquivos -->
+                            <div class="col-12">
+                                <div style="background:#f9f6f0; border-radius:4px;
+                                            padding:1rem; margin-bottom:4px;">
+                                    <p style="font-size:11px; letter-spacing:1.5px;
+                                               text-transform:uppercase; color:#c9a84c;
+                                               margin-bottom:12px;">
+                                        Arquivos do bônus
+                                    </p>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">
+                                            <i class="bi bi-file-pdf me-1"></i>
+                                            PDF
+                                        </label>
+                                        {{ form.file }}
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">
+                                            <i class="bi bi-book me-1"></i>
+                                            EPUB
+                                        </label>
+                                        {{ form.file_epub }}
+                                    </div>
+
+                                    <div class="mb-0">
+                                        <label class="form-label">
+                                            <i class="bi bi-tablet me-1"></i>
+                                            MOBI (Kindle)
+                                        </label>
+                                        {{ form.file_mobi }}
+                                    </div>
+                                </div>
+                                <small style="font-size:11px; color:#888;">
+                                    Você pode adicionar um ou mais formatos.
+                                </small>
+                            </div>
+
+                            <div class="col-4">
+                                <label class="form-label">Ordem</label>
+                                {{ form.order }}
+                                <small style="font-size:11px; color:#888;">
+                                    Menor = aparece primeiro
+                                </small>
+                            </div>
+
+                            <div class="col-12 d-flex gap-2 mt-2">
+                                <button type="submit" class="btn-gold px-5"
+                                        style="padding:12px;">
+                                    <i class="bi bi-check-lg me-1"></i>Salvar bônus
+                                </button>
+                                <a href="{% url 'accounts:ebook_bonuses' ebook.pk %}"
+                                   class="btn-outline-gold"
+                                   style="padding:12px 20px;">
+                                    Cancelar
+                                </a>
+                            </div>
+
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

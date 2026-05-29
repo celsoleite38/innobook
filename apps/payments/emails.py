@@ -46,3 +46,21 @@ def send_new_sale_notification(order):
         html_message   = html_message,
         fail_silently  = True,  # não quebra o fluxo se o produtor não tiver email
     )
+
+def send_pending_order_reminder(order):
+    """Lembra o cliente de um pedido não pago."""
+    subject = f'⏳ Você tem um pedido pendente — {order.ebook.title}'
+
+    context = {'order': order}
+
+    html_message  = render_to_string('emails/pending_order.html', context)
+    plain_message = render_to_string('emails/pending_order.txt', context)
+
+    send_mail(
+        subject        = subject,
+        message        = plain_message,
+        from_email     = settings.DEFAULT_FROM_EMAIL,
+        recipient_list = [order.buyer_email],
+        html_message   = html_message,
+        fail_silently  = True,
+    )

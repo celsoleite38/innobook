@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; }
+        .container { max-width:600px; margin:30px auto; background:#fff; border-radius:8px; overflow:hidden; }
+        .header { background:#1a1a2e; padding:30px; text-align:center; }
+        .header h1 { color:#c9a84c; margin:0; font-size:24px; }
+        .body { padding:30px; }
+        .btn { display:inline-block; background:#c9a84c; color:#1a1a2e !important;
+               padding:14px 32px; border-radius:4px; text-decoration:none;
+               font-weight:bold; margin:20px 0; }
+        .footer { background:#f4f4f4; padding:20px; text-align:center; color:#999; font-size:12px; }
+        .box { background:#f9f6f0; border-radius:6px; padding:16px; margin:16px 0; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header"><h1>📚 BookHub</h1></div>
+    <div class="body">
+        <h2>Olá, {{ order.buyer_name }}!</h2>
+        <p>Você iniciou uma compra mas ainda não finalizou o pagamento.</p>
+
+        <div class="box">
+            <strong>{{ order.ebook.title }}</strong><br>
+            <small style="color:#666;">
+                Valor: R$ {{ order.amount }}<br>
+                Pedido criado em: {{ order.created_at|date:"d/m/Y H:i" }}
+            </small>
+        </div>
+
+        <p>Seu pedido expira em <strong>24 horas</strong>. Finalize agora:</p>
+
+        <div style="text-align:center;">
+            <a href="{{ site_url }}/payments/meus-pedidos/" class="btn">
+                Finalizar pagamento
+            </a>
+        </div>
+    </div>
+    <div class="footer">© BookHub</div>
+</div>
+</body>
+</html>

@@ -5,10 +5,11 @@ from django.contrib import messages
 from .models import User
 from .forms import LoginForm, RegisterForm, ProfileForm
 
-from apps.products.models import Ebook
-from apps.products.forms import EbookForm
+from apps.products.models import Ebook, EbookBonus
+from apps.products.forms import EbookForm, EbookBonusForm
 from apps.payments.models import Order
 from django.db.models import Sum, Count
+
 
 @login_required
 def producer_dashboard_view(request):
@@ -157,3 +158,43 @@ def profile_view(request):
             return redirect('accounts:profile')
 
     return render(request, 'accounts/profile.html', {'form': form})
+
+
+
+@login_required
+def bonus_create_view(request, ebook_pk):
+    ebook = get_object_or_404(Ebook, pk=ebook_pk, author=request.user)
+    form  = EbookBonusForm(request.POST or None, request.FILES or None)
+
+    if request.method == 'POST':
+        if form.is_valid():
+            bonus       = form.save(commit=False)
+            bonus.ebook = ebook
+            bonus.save()
+            messages.success(request, f'Bônus "{bonus.title}" adicionado!')
+            return redirect('accounts:ebook_bonuses', pk=ebook_pk)
+
+    return render(request, 'accounts/bonus_form.html', {
+        'form' : form,
+        'ebook': ebook,
+        'title': 'Novo Bônus',
+    })
+
+
+@login_required
+def bonus_list_view(request, pk):
+    ebook   = get_object_or_404(Ebook, pk=pk, author=request.user)
+    bonuses = ebook.bonuses.all()
+    return render(request, 'accounts/bonus_list.html', {
+        'ebook'  : ebook,
+        'bonuses': bonuses,
+    })
+
+
+@login_required
+def bonus_delete_view(request, pk):
+    bonus = get_object_or_404(EbookBonus, pk=pk, ebook__author=request.user)
+    ebook_pk = bonus.ebook.pk
+    bonus.delete()
+    messages.success(request, 'Bônus removido.')
+    return redirect('accounts:ebook_bonuses', pk=ebook_pk)

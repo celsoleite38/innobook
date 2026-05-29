@@ -99,7 +99,15 @@
                 <div class="d-flex flex-column gap-1">
                     <a href="{% url 'accounts:ebook_edit' ebook.pk %}"
                        class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-pencil"></i>
+                        <i class="bi bi-pencil">Editar</i>
+                    </a>
+                    <a href="{% url 'accounts:ebook_bonuses' ebook.pk %}"
+                        class="btn btn-outline-secondary btn-sm"
+                        title="Gerenciar bônus">
+                        <i class="bi bi-gift">Bônus</i>
+                        {% with count=ebook.bonuses.count %}
+                        {% if count %}<span class="badge bg-warning text-dark">{{ count }}</span>{% endif %}
+                        {% endwith %}
                     </a>
                     {% if ebook.is_published %}
                     <a href="{% url 'products:detail' ebook.slug %}"

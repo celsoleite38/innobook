@@ -91,6 +91,69 @@
                     {{ ebook.description }}
                 </p>
 
+
+                <!-- Formatos disponíveis -->
+                <div class="d-flex gap-2 flex-wrap mb-4">
+                    <span style="font-size:11px; color:#888; letter-spacing:1px;
+                                text-transform:uppercase; margin-right:4px;">
+                        Formatos:
+                    </span>
+                    <span style="background:#f0f4ff; color:#1a1a6e; font-size:11px;
+                                padding:3px 10px; border-radius:20px; border:0.5px solid #c0c8e8;">
+                        PDF
+                    </span>
+                    {% if ebook.file_epub %}
+                    <span style="background:#f0fff4; color:#1a5e2e; font-size:11px;
+                                padding:3px 10px; border-radius:20px; border:0.5px solid #b8d8c0;">
+                        EPUB
+                    </span>
+                    {% endif %}
+                    {% if ebook.file_mobi %}
+                    <span style="background:#fff8f0; color:#8a4a00; font-size:11px;
+                                padding:3px 10px; border-radius:20px; border:0.5px solid #e8d0b0;">
+                        MOBI — Kindle
+                    </span>
+                    {% endif %}
+                </div>
+
+                <!-- Bônus inclusos -->
+                {% if ebook.bonuses.all %}
+                <div style="background:#f9f6f0; border:0.5px solid #e0d8cc; border-radius:6px;
+                            padding:1rem; margin-bottom:1.5rem;">
+                    <p style="font-size:11px; letter-spacing:2px; text-transform:uppercase;
+                            color:#c9a84c; margin-bottom:12px;">
+                        🎁 Bônus inclusos nesta compra
+                    </p>
+                    {% for bonus in ebook.bonuses.all %}
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                        {% if bonus.cover %}
+                        <img src="{{ bonus.cover.url }}" width="36" height="48"
+                            style="object-fit:cover; border-radius:3px; flex-shrink:0;">
+                        {% else %}
+                        <div style="width:36px; height:48px; background:#1a1a2e; border-radius:3px;
+                                    display:flex; align-items:center; justify-content:center;
+                                    font-size:1rem; flex-shrink:0;">🎁</div>
+                        {% endif %}
+                        <div>
+                            <p style="font-size:13px; font-weight:600; color:#1a1a2e; margin-bottom:2px;">
+                                {{ bonus.title }}
+                            </p>
+                            <div class="d-flex gap-1">
+                                {% for fmt in bonus.get_available_formats %}
+                                <span style="font-size:9px; color:#888; background:#fff;
+                                            padding:1px 6px; border-radius:10px;
+                                            border:0.5px solid #d0c8bc;">
+                                    {{ fmt }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+
                 <!-- Box de compra -->
                 <div style="background:#fff; border:0.5px solid #e0d8cc;
                             border-radius:6px; padding:1.5rem;">
@@ -133,6 +196,13 @@
                        style="padding:14px; font-size:12px;">
                         <i class="bi bi-bag me-2"></i>Comprar agora
                     </a>
+                    {% if not already_bought %}
+                    <a href="{% url 'cart:add' ebook.id %}"
+                        class="btn-outline-gold d-block text-center mt-2"
+                        style="padding:12px; font-size:12px;">
+                            <i class="bi bi-bag-plus me-2"></i>Adicionar ao carrinho
+                    </a>
+                    {% endif %}
                     {% else %}
                     <a href="{% url 'accounts:login' %}?next={% url 'payments:checkout' ebook.id %}"
                        class="btn-navy d-block text-center"

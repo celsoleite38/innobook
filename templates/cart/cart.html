@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% block title %}Carrinho — BookHub{% endblock %}
+
+{% block content %}
+<section style="background:#1a1a2e; padding:32px 0;">
+    <div class="container">
+        <p style="color:#c9a84c; font-size:11px; letter-spacing:3px;
+                  text-transform:uppercase; margin-bottom:8px;">
+            Minha seleção
+        </p>
+        <h1 style="font-family:'Playfair Display',serif; color:#f5f0e8;
+                   font-size:28px; font-weight:600; margin:0;">
+            Carrinho de Compras
+        </h1>
+    </div>
+</section>
+
+<section class="py-5 bg-cream">
+    <div class="container">
+        {% if items %}
+        <div class="row g-4">
+
+            <!-- Lista de itens -->
+            <div class="col-lg-8">
+                {% for item in items %}
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:1rem; margin-bottom:1rem;
+                            display:flex; align-items:center; gap:16px;">
+                    {% if item.ebook.cover %}
+                    <img src="{{ item.ebook.cover.url }}" width="60" height="80"
+                         style="object-fit:cover; border-radius:4px; flex-shrink:0;">
+                    {% else %}
+                    <div style="width:60px; height:80px; background:#1a1a2e;
+                                border-radius:4px; display:flex; align-items:center;
+                                justify-content:center; font-size:1.5rem; flex-shrink:0;">
+                        📚
+                    </div>
+                    {% endif %}
+
+                    <div class="flex-grow-1">
+                        {% if item.ebook.category %}
+                        <p style="color:#c9a84c; font-size:10px; letter-spacing:1.5px;
+                                   text-transform:uppercase; margin-bottom:3px;">
+                            {{ item.ebook.category.name }}
+                        </p>
+                        {% endif %}
+                        <p style="font-family:'Playfair Display',serif; font-size:15px;
+                                   font-weight:600; color:#1a1a2e; margin-bottom:3px;">
+                            {{ item.ebook.title }}
+                        </p>
+                        <p style="font-size:12px; color:#888; margin-bottom:0;">
+                            {{ item.ebook.author.get_full_name }}
+                        </p>
+                    </div>
+
+                    <div class="text-end flex-shrink-0">
+                        {% if item.ebook_id in paid_ebook_ids %}
+                        <span style="font-size:11px; color:#2d5a2d; background:#f0f7f0;
+                                     padding:4px 10px; border-radius:20px;">
+                            ✓ Já comprado
+                        </span>
+                        {% else %}
+                        <p style="font-size:18px; color:#c9a84c; font-weight:500;
+                                   margin-bottom:8px;">
+                            R$ {{ item.price }}
+                        </p>
+                        <a href="{% url 'cart:remove' item.id %}"
+                           style="font-size:11px; color:#888; text-decoration:none;">
+                            <i class="bi bi-trash"></i> Remover
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Resumo -->
+            <div class="col-lg-4">
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:1.5rem; position:sticky; top:80px;">
+                    <p style="font-size:11px; letter-spacing:2px; text-transform:uppercase;
+                               color:#c9a84c; margin-bottom:16px;">
+                        Resumo do pedido
+                    </p>
+
+                    {% for item in items %}
+                    {% if item.ebook_id not in paid_ebook_ids %}
+                    <div class="d-flex justify-content-between mb-2"
+                         style="font-size:13px;">
+                        <span style="color:#555;">{{ item.ebook.title|truncatechars:25 }}</span>
+                        <span style="color:#1a1a2e; font-weight:500;">
+                            R$ {{ item.price }}
+                        </span>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+
+                    <div style="border-top:0.5px solid #e0d8cc; padding-top:12px;
+                                margin-top:12px; margin-bottom:20px;">
+                        <div class="d-flex justify-content-between align-items-baseline">
+                            <span style="font-size:13px; color:#888;
+                                         text-transform:uppercase; letter-spacing:1px;">
+                                Total
+                            </span>
+                            <span style="font-family:'Playfair Display',serif;
+                                         font-size:26px; color:#c9a84c; font-weight:600;">
+                                R$ {{ cart.total }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <a href="{% url 'payments:cart_checkout' %}"
+                       class="btn-gold d-block text-center"
+                       style="padding:14px; font-size:12px;">
+                        <i class="bi bi-lock me-2"></i>Finalizar compra
+                    </a>
+
+                    <a href="{% url 'products:list' %}"
+                       class="btn-outline-gold d-block text-center mt-2"
+                       style="padding:10px; font-size:11px;">
+                        Continuar comprando
+                    </a>
+
+                    <div class="text-center mt-3"
+                         style="font-size:11px; color:#aaa;">
+                        <i class="bi bi-shield-check me-1 text-gold"></i>
+                        Compra 100% segura
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-cart-x" style="font-size:4rem; color:#c9a84c;"></i>
+            <h3 style="font-family:'Playfair Display',serif; margin-top:1rem;
+                        color:#1a1a2e;">
+                Seu carrinho está vazio
+            </h3>
+            <p style="color:#888; margin-bottom:1.5rem;">
+                Explore nosso catálogo e adicione eBooks ao carrinho.
+            </p>
+            <a href="{% url 'products:list' %}" class="btn-gold">
+                Explorar catálogo
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

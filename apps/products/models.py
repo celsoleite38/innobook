@@ -63,6 +63,19 @@ class Ebook(models.Model):
         verbose_name='Arquivo PDF'
     )
 
+    # EPUB (opcional)
+    file_epub       = models.FileField(
+        upload_to='protected/ebooks/epub/',
+        blank=True, null=True,
+        verbose_name='Arquivo EPUB'
+    )
+    # MOBI/Kindle (opcional)
+    file_mobi       = models.FileField(
+        upload_to='protected/ebooks/mobi/',
+        blank=True, null=True,
+        verbose_name='Arquivo MOBI (Kindle)'
+    )
+
     # Preview gratuito (primeiras páginas)
     preview     = models.FileField(
         upload_to='previews/',
@@ -115,6 +128,76 @@ class Ebook(models.Model):
 
     def is_published(self):
         return self.status == self.STATUS_PUBLISHED
+    
+    def get_available_formats(self):
+        """Retorna lista de formatos disponíveis."""
+        formats = ['PDF']
+        if self.file_epub:
+            formats.append('EPUB')
+        if self.file_mobi:
+            formats.append('MOBI')
+        return formats
 
     def __str__(self):
         return self.title
+
+class EbookBonus(models.Model):
+    """
+    eBook bônus vinculado a um eBook principal.
+    Quem compra o principal recebe acesso aos bônus automaticamente.
+    """
+
+    ebook       = models.ForeignKey(
+        Ebook,
+        on_delete=models.CASCADE,
+        related_name='bonuses',
+        verbose_name='eBook principal'
+    )
+    title       = models.CharField(max_length=200, verbose_name='Título do bônus')
+    description = models.TextField(blank=True, verbose_name='Descrição')
+    cover       = models.ImageField(
+        upload_to='covers/bonus/',
+        blank=True, null=True,
+        verbose_name='Capa do bônus'
+    )
+
+    # Arquivos do bônus
+    file        = models.FileField(
+        upload_to='protected/bonus/',
+        verbose_name='Arquivo PDF',
+        blank=True, null=True,
+    )
+    file_epub   = models.FileField(
+        upload_to='protected/bonus/epub/',
+        blank=True, null=True,
+        verbose_name='Arquivo EPUB'
+    )
+    file_mobi   = models.FileField(
+        upload_to='protected/bonus/mobi/',
+        blank=True, null=True,
+        verbose_name='Arquivo MOBI (Kindle)'
+    )
+
+    order       = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Ordem de exibição'
+    )
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name        = 'eBook Bônus'
+        verbose_name_plural = 'eBooks Bônus'
+        ordering            = ['order', 'created_at']
+
+    def get_available_formats(self):
+        formats = []
+        if self.file:
+            formats.append('PDF')
+        if self.file_epub:
+            formats.append('EPUB')
+        if self.file_mobi:
+            formats.append('MOBI')
+        return formats
+
+    def __str__(self):
+        return f'Bônus: {self.title} → {self.ebook.title}'

@@ -12,4 +12,7 @@ urlpatterns = [
     path('producer/',       views.producer_dashboard_view, name='producer'),
     path('producer/ebook/new/',        views.ebook_create_view, name='ebook_create'),
     path('producer/ebook/<int:pk>/edit/', views.ebook_edit_view, name='ebook_edit'),
+    path('producer/ebook/<int:pk>/bonus/',      views.bonus_list_view,   name='ebook_bonuses'),
+    path('producer/ebook/<int:ebook_pk>/bonus/new/', views.bonus_create_view, name='bonus_create'),
+    path('producer/bonus/<int:pk>/delete/',     views.bonus_delete_view, name='bonus_delete'),
 ]

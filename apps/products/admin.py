@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Ebook
+from .models import Category, Ebook, EbookBonus
 
 
 @admin.register(Category)
@@ -7,6 +7,14 @@ class CategoryAdmin(admin.ModelAdmin):
     list_display  = ['name', 'slug']
     prepopulated_fields = {'slug': ('name',)}
     search_fields = ['name']
+
+class EbookBonusInline(admin.StackedInline):
+    model       = EbookBonus
+    extra       = 1
+    fields      = [
+        'title', 'description', 'cover',
+        'file', 'file_epub', 'file_mobi', 'order'
+    ]
 
 
 @admin.register(Ebook)
@@ -36,3 +44,13 @@ class EbookAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+@admin.register(EbookBonus)
+class EbookBonusAdmin(admin.ModelAdmin):
+    list_display  = ['title', 'ebook', 'order', 'get_formats']
+    list_filter   = ['ebook']
+    search_fields = ['title', 'ebook__title']
+
+    @admin.display(description='Formatos')
+    def get_formats(self, obj):
+        return ' | '.join(obj.get_available_formats()) or '—'

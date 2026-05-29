@@ -119,8 +119,41 @@
                     <a href="{% url 'delivery:download' token.token %}"
                        class="btn-gold flex-shrink-0"
                        style="padding:7px 14px; font-size:10px;">
-                        <i class="bi bi-download"></i>
+                        <i class="bi bi-download">Baixar EBOOK</i>
                     </a>
+                    <!-- Downloads dos bônus -->
+                    {% for bonus in order.ebook.bonuses.all %}
+                    {% for token in order.download_tokens.all %}
+                    {% if token.is_valid %}
+                    <div class="mt-2 ps-2"
+                        style="border-left:2px solid #c9a84c;">
+                        <p style="font-size:11px; color:#888; margin-bottom:4px;">
+                            🎁 {{ bonus.title }}
+                        </p>
+                        <div class="d-flex gap-1 flex-wrap">
+                            {% if bonus.file %}
+                            <a href="{% url 'delivery:download_bonus' token.token bonus.pk %}?format=pdf"
+                            class="btn-navy" style="padding:3px 10px; font-size:9px;">
+                                PDF
+                            </a>
+                            {% endif %}
+                            {% if bonus.file_epub %}
+                            <a href="{% url 'delivery:download_bonus' token.token bonus.pk %}?format=epub"
+                            class="btn-navy" style="padding:3px 10px; font-size:9px;">
+                                EPUB
+                            </a>
+                            {% endif %}
+                            {% if bonus.file_mobi %}
+                            <a href="{% url 'delivery:download_bonus' token.token bonus.pk %}?format=mobi"
+                            class="btn-navy" style="padding:3px 10px; font-size:9px;">
+                                MOBI
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                    {% endfor %}
                     {% endif %}
                     {% endfor %}
                 </div>

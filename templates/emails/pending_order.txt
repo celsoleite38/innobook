@@ -1,0 +1,13 @@
+BookHub — Pedido pendente
+
+Olá, {{ order.buyer_name }}!
+
+Você tem um pedido pendente:
+
+Produto: {{ order.ebook.title }}
+Valor  : R$ {{ order.amount }}
+
+Acesse para finalizar o pagamento:
+{{ site_url }}/payments/meus-pedidos/
+
+Este pedido expira em 24 horas.
