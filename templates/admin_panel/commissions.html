@@ -1,0 +1,263 @@
+{% extends 'base.html' %}
+{% block title %}Comissões — BookHub Admin{% endblock %}
+
+{% block content %}
+
+<section style="background:#1a1a2e; padding:32px 0;">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <p style="color:#c9a84c; font-size:11px; letter-spacing:3px;
+                          text-transform:uppercase; margin-bottom:8px;">
+                    Administrador
+                </p>
+                <h1 style="font-family:'Playfair Display',serif; color:#f5f0e8;
+                           font-size:28px; font-weight:600; margin:0;">
+                    Comissões por Escritor
+                </h1>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'payments:admin_withdraws' %}"
+                   class="btn-outline-gold"
+                   style="padding:8px 18px; font-size:11px;">
+                    <i class="bi bi-arrow-left me-1"></i>Saques
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-5 bg-cream">
+    <div class="container">
+
+        <!-- Cards totais -->
+        <div class="row g-3 mb-5">
+
+            <div class="col-md-3">
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:1.5rem; text-align:center;">
+                    <div style="width:44px; height:44px; background:#f9f6f0;
+                                border-radius:50%; display:flex; align-items:center;
+                                justify-content:center; margin:0 auto 10px;">
+                        <i class="bi bi-people text-gold" style="font-size:18px;"></i>
+                    </div>
+                    <p style="font-family:'Playfair Display',serif; font-size:26px;
+                               font-weight:600; color:#1a1a2e; margin-bottom:2px;">
+                        {{ producers|length }}
+                    </p>
+                    <p style="font-size:11px; letter-spacing:1px; text-transform:uppercase;
+                               color:#888; margin:0;">
+                        Escritores ativos
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:1.5rem; text-align:center;">
+                    <div style="width:44px; height:44px; background:#f9f6f0;
+                                border-radius:50%; display:flex; align-items:center;
+                                justify-content:center; margin:0 auto 10px;">
+                        <i class="bi bi-graph-up text-gold" style="font-size:18px;"></i>
+                    </div>
+                    <p style="font-family:'Playfair Display',serif; font-size:26px;
+                               font-weight:600; color:#1a1a2e; margin-bottom:2px;">
+                        R$ {{ totals.gross|floatformat:2 }}
+                    </p>
+                    <p style="font-size:11px; letter-spacing:1px; text-transform:uppercase;
+                               color:#888; margin:0;">
+                        Receita bruta total
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div style="background:#1a1a2e; border-radius:6px;
+                            padding:1.5rem; text-align:center;">
+                    <div style="width:44px; height:44px; background:#c9a84c;
+                                border-radius:50%; display:flex; align-items:center;
+                                justify-content:center; margin:0 auto 10px;">
+                        <i class="bi bi-percent" style="font-size:18px; color:#1a1a2e;"></i>
+                    </div>
+                    <p style="font-family:'Playfair Display',serif; font-size:26px;
+                               font-weight:600; color:#c9a84c; margin-bottom:2px;">
+                        R$ {{ totals.commission|floatformat:2 }}
+                    </p>
+                    <p style="font-size:11px; letter-spacing:1px; text-transform:uppercase;
+                               color:#aaa; margin:0;">
+                        Total comissões ({{ commission_percent }}%)
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:1.5rem; text-align:center;">
+                    <div style="width:44px; height:44px; background:#f0f7f0;
+                                border-radius:50%; display:flex; align-items:center;
+                                justify-content:center; margin:0 auto 10px;">
+                        <i class="bi bi-cash-coin" style="font-size:18px; color:#2d5a2d;"></i>
+                    </div>
+                    <p style="font-family:'Playfair Display',serif; font-size:26px;
+                               font-weight:600; color:#2d5a2d; margin-bottom:2px;">
+                        R$ {{ totals.net|floatformat:2 }}
+                    </p>
+                    <p style="font-size:11px; letter-spacing:1px; text-transform:uppercase;
+                               color:#888; margin:0;">
+                        Total líquido escritores
+                    </p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Tabela por escritor -->
+        <div style="background:#fff; border:0.5px solid #e0d8cc;
+                    border-radius:6px; overflow:hidden;">
+
+            <div style="padding:1rem 1.5rem; border-bottom:0.5px solid #e0d8cc;
+                        display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <p style="font-size:11px; letter-spacing:2px; text-transform:uppercase;
+                               color:#c9a84c; margin-bottom:2px;">
+                        Detalhamento
+                    </p>
+                    <h5 style="font-family:'Playfair Display',serif;
+                               margin:0; color:#1a1a2e;">
+                        Comissões por Escritor
+                    </h5>
+                </div>
+                <small style="font-size:11px; color:#888;">
+                    Comissão da plataforma: {{ commission_percent }}%
+                </small>
+            </div>
+
+            {% if producers %}
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Escritor</th>
+                            <th class="text-center">Vendas</th>
+                            <th class="text-end">Receita Bruta</th>
+                            <th class="text-end" style="color:#c9a84c;">
+                                Comissão ({{ commission_percent }}%)
+                            </th>
+                            <th class="text-end" style="color:#2d5a2d;">
+                                Líquido Escritor
+                            </th>
+                            <th class="text-end">Já sacado</th>
+                            <th class="text-end">Disponível</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in producers %}
+                        <tr>
+                            <!-- Escritor -->
+                            <td>
+                                <p style="font-size:13px; font-weight:600;
+                                           color:#1a1a2e; margin-bottom:2px;">
+                                    {{ p.name }}
+                                </p>
+                                <small style="font-size:11px; color:#aaa;">
+                                    {{ p.email }}
+                                </small>
+                            </td>
+
+                            <!-- Vendas -->
+                            <td class="text-center">
+                                <span style="background:#f9f6f0; color:#c9a84c;
+                                             font-size:12px; font-weight:600;
+                                             padding:2px 12px; border-radius:20px;
+                                             border:0.5px solid #e8d5a3;">
+                                    {{ p.orders }}
+                                </span>
+                            </td>
+
+                            <!-- Bruto -->
+                            <td class="text-end"
+                                style="font-size:13px; color:#555;">
+                                R$ {{ p.gross|floatformat:2 }}
+                            </td>
+
+                            <!-- Comissão -->
+                            <td class="text-end">
+                                <span style="font-size:13px; font-weight:600;
+                                             color:#c9a84c;">
+                                    R$ {{ p.commission|floatformat:2 }}
+                                </span>
+                            </td>
+
+                            <!-- Líquido -->
+                            <td class="text-end">
+                                <span style="font-size:13px; font-weight:600;
+                                             color:#2d5a2d;">
+                                    R$ {{ p.net|floatformat:2 }}
+                                </span>
+                            </td>
+
+                            <!-- Já sacado -->
+                            <td class="text-end"
+                                style="font-size:13px; color:#888;">
+                                R$ {{ p.withdrawn|floatformat:2 }}
+                            </td>
+
+                            <!-- Disponível -->
+                            <td class="text-end">
+                                {% if p.available > 0 %}
+                                <span style="font-size:13px; font-weight:600;
+                                             color:#1a1a2e;
+                                             background:#f9f6f0; padding:3px 10px;
+                                             border-radius:20px;
+                                             border:0.5px solid #e0d8cc;">
+                                    R$ {{ p.available|floatformat:2 }}
+                                </span>
+                                {% else %}
+                                <span style="font-size:12px; color:#aaa;">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+
+                    <!-- Totais -->
+                    <tfoot>
+                        <tr style="background:#f9f6f0; font-weight:600;">
+                            <td style="font-size:13px; color:#1a1a2e;">
+                                <strong>Total</strong>
+                            </td>
+                            <td></td>
+                            <td class="text-end"
+                                style="font-size:13px; color:#555;">
+                                R$ {{ totals.gross|floatformat:2 }}
+                            </td>
+                            <td class="text-end"
+                                style="font-size:13px; color:#c9a84c; font-weight:700;">
+                                R$ {{ totals.commission|floatformat:2 }}
+                            </td>
+                            <td class="text-end"
+                                style="font-size:13px; color:#2d5a2d; font-weight:700;">
+                                R$ {{ totals.net|floatformat:2 }}
+                            </td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            {% else %}
+            <div class="text-center py-5" style="color:#aaa;">
+                <i class="bi bi-bar-chart"
+                   style="font-size:3rem; color:#c9a84c;"></i>
+                <p class="mt-3" style="font-size:14px;">
+                    Nenhuma venda registrada ainda.
+                </p>
+            </div>
+            {% endif %}
+
+        </div>
+
+    </div>
+</section>
+{% endblock %}

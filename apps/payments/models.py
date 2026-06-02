@@ -274,8 +274,14 @@ class WithdrawRequest(models.Model):
     )
     note        = models.TextField(
         blank=True,
-        verbose_name='Observação do admin'
+        verbose_name='Observação do admin')
+    
+    receipt     = models.ImageField(
+        upload_to='receipts/withdraws/',
+        blank=True, null=True,
+        verbose_name='Comprovante de pagamento'
     )
+
     created_at  = models.DateTimeField(auto_now_add=True)
     updated_at  = models.DateTimeField(auto_now=True)
     paid_at     = models.DateTimeField(null=True, blank=True)
@@ -284,6 +290,14 @@ class WithdrawRequest(models.Model):
         verbose_name        = 'Solicitação de Saque'
         verbose_name_plural = 'Solicitações de Saque'
         ordering            = ['-created_at']
+
+    def save(self, *args, **kwargs):
+        from django.utils import timezone as tz
+        # Marca como PAGO automaticamente quando comprovante for inserido
+        if self.receipt and not self.paid_at:
+            self.status  = self.STATUS_PAID
+            self.paid_at = tz.now()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'Saque R$ {self.amount} — {self.producer.username} — {self.get_status_display()}'

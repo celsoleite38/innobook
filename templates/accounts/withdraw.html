@@ -29,7 +29,7 @@
                     </p>
                     <p style="font-family:'Playfair Display',serif; font-size:36px;
                                color:#c9a84c; font-weight:600; margin-bottom:4px;">
-                        R$ {{ financial.available }}
+                        R$ {{ financial.available|floatformat:2 }}
                     </p>
                     <small style="font-size:11px; color:#666;">
                         Mínimo para saque: R$ {{ financial.min_withdraw }}
@@ -66,7 +66,7 @@
                             </div>
                             {% endif %}
                             <small style="font-size:11px; color:#888; margin-top:4px; display:block;">
-                                Máximo disponível: R$ {{ financial.available }}
+                                Máximo disponível: R$ {{ financial.available|floatformat:2 }}
                             </small>
                         </div>
 

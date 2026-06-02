@@ -275,6 +275,23 @@
                             {{ w.get_status_display }}
                         </span>
                     </div>
+                    {% if w.receipt and w.status == 'paid' %}
+                    <div style="margin-top:10px;">
+                        <a href="{{ w.receipt.url }}" target="_blank">
+                            <img src="{{ w.receipt.url }}"
+                                style="height:80px; border-radius:4px;
+                                        box-shadow:0 2px 8px rgba(0,0,0,0.1);
+                                        object-fit:cover; cursor:pointer;"
+                                title="Clique para ampliar">
+                        </a>
+                        {% if w.paid_at %}
+                        <small style="font-size:11px; color:#2d5a2d; display:block; margin-top:4px;">
+                            <i class="bi bi-check-circle me-1"></i>
+                            Pago em {{ w.paid_at|date:"d/m/Y \à\s H:i" }}
+                        </small>
+                        {% endif %}
+                    </div>
+                    {% endif %}
                     {% endfor %}
                 </div>
                 {% endif %}

@@ -60,6 +60,20 @@
                                 <i class="bi bi-speedometer2 me-2 text-gold"></i>Dashboard
                             </a>
                         </li>
+                        {% if user.is_superuser %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item py-2" href="{% url 'payments:admin_withdraws' %}"
+                            style="color:#c9a84c;">
+                                <i class="bi bi-shield-check me-2"></i>Gestão de Saques
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item py-2" href="{% url 'payments:admin_commissions' %}">
+                                <i class="bi bi-percent me-2 text-gold"></i>Comissões
+                            </a>
+                        </li>
+                        {% endif %}
                         {% if user.is_producer %}
                         <li>
                             <a class="dropdown-item py-2" href="{% url 'accounts:financial' %}">

@@ -30,3 +30,18 @@ class WithdrawForm(forms.Form):
             'min'  : '0',
         })
     )
+
+class WithdrawReceiptForm(forms.ModelForm):
+    """Form para o admin fazer upload do comprovante."""
+    class Meta:
+        model  = WithdrawRequest
+        fields = ['receipt', 'note', 'status']
+        widgets = {
+            'receipt': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
+            'note'   : forms.Textarea(attrs={
+                'class'      : 'form-control',
+                'rows'       : 3,
+                'placeholder': 'Observação opcional...'
+            }),
+            'status' : forms.Select(attrs={'class': 'form-select'}),
+        }

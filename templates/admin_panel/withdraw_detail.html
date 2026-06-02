@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+{% block title %}Saque #{{ withdraw.pk }} — BookHub Admin{% endblock %}
+
+{% block content %}
+
+<section style="background:#1a1a2e; padding:32px 0;">
+    <div class="container">
+        <div class="d-flex align-items-center gap-3">
+            <a href="{% url 'payments:admin_withdraws' %}"
+               style="color:#c9a84c; font-size:20px; text-decoration:none;">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <div>
+                <p style="color:#c9a84c; font-size:11px; letter-spacing:3px;
+                          text-transform:uppercase; margin-bottom:4px;">
+                    Pedido #{{ withdraw.pk }}
+                </p>
+                <h1 style="font-family:'Playfair Display',serif; color:#f5f0e8;
+                           font-size:26px; font-weight:600; margin:0;">
+                    Processar Saque
+                </h1>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-5 bg-cream">
+    <div class="container">
+        <div class="row g-4 justify-content-center">
+
+            <!-- Dados do saque -->
+            <div class="col-md-5">
+
+                <!-- Produtor -->
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:1.5rem; margin-bottom:1.5rem;">
+                    <p style="font-size:11px; letter-spacing:2px; text-transform:uppercase;
+                               color:#c9a84c; margin-bottom:14px;">
+                        Produtor
+                    </p>
+                    <div class="d-flex gap-3 align-items-center">
+                        <div style="width:48px; height:48px; background:#1a1a2e;
+                                    border-radius:50%; display:flex; align-items:center;
+                                    justify-content:center; flex-shrink:0;">
+                            <i class="bi bi-person text-gold" style="font-size:20px;"></i>
+                        </div>
+                        <div>
+                            <p style="font-size:15px; font-weight:600; color:#1a1a2e;
+                                       margin-bottom:3px;">
+                                {{ withdraw.producer.get_full_name|default:withdraw.producer.username }}
+                            </p>
+                            <p style="font-size:12px; color:#888; margin:0;">
+                                {{ withdraw.producer.email }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dados do pagamento -->
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:1.5rem; margin-bottom:1.5rem;">
+                    <p style="font-size:11px; letter-spacing:2px; text-transform:uppercase;
+                               color:#c9a84c; margin-bottom:14px;">
+                        Dados do PIX
+                    </p>
+
+                    <div class="row g-2" style="font-size:13px;">
+                        <div class="col-5" style="color:#888;">Tipo de chave</div>
+                        <div class="col-7" style="font-weight:600; color:#1a1a2e;">
+                            {{ withdraw.pix_type|upper }}
+                        </div>
+
+                        <div class="col-5" style="color:#888;">Chave PIX</div>
+                        <div class="col-7">
+                            <span style="font-weight:600; color:#1a1a2e;
+                                         word-break:break-all;">
+                                {{ withdraw.pix_key }}
+                            </span>
+                        </div>
+
+                        <div class="col-5" style="color:#888;">Valor</div>
+                        <div class="col-7">
+                            <span style="font-family:'Playfair Display',serif;
+                                         font-size:20px; color:#c9a84c; font-weight:600;">
+                                R$ {{ withdraw.amount }}
+                            </span>
+                        </div>
+
+                        <div class="col-5" style="color:#888;">Solicitado em</div>
+                        <div class="col-7" style="color:#1a1a2e;">
+                            {{ withdraw.created_at|date:"d/m/Y \à\s H:i" }}
+                        </div>
+
+                        <div class="col-5" style="color:#888;">Status atual</div>
+                        <div class="col-7">
+                            <span style="font-size:11px; padding:3px 12px;
+                                         border-radius:20px; font-weight:500;
+                                         {% if withdraw.status == 'paid' %}
+                                             background:#f0f7f0; color:#2d5a2d;
+                                             border:0.5px solid #b8d8b8;
+                                         {% elif withdraw.status == 'pending' %}
+                                             background:#fdf8ee; color:#8a6000;
+                                             border:0.5px solid #e8d5a3;
+                                         {% elif withdraw.status == 'approved' %}
+                                             background:#f0f4ff; color:#1a1a6e;
+                                             border:0.5px solid #c0c8e8;
+                                         {% else %}
+                                             background:#fdf0f0; color:#8b2020;
+                                             border:0.5px solid #e8b8b8;
+                                         {% endif %}">
+                                {{ withdraw.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comprovante já enviado -->
+                {% if withdraw.receipt %}
+                <div style="background:#f0f7f0; border:0.5px solid #b8d8b8;
+                            border-radius:6px; padding:1.2rem; margin-bottom:1.5rem;">
+                    <p style="font-size:11px; letter-spacing:1px; text-transform:uppercase;
+                               color:#2d5a2d; margin-bottom:10px;">
+                        ✓ Comprovante enviado
+                    </p>
+                    <a href="{{ withdraw.receipt.url }}" target="_blank">
+                        <img src="{{ withdraw.receipt.url }}"
+                             style="width:100%; border-radius:4px;
+                                    box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+                    </a>
+                    {% if withdraw.paid_at %}
+                    <p style="font-size:11px; color:#2d5a2d; margin-top:8px; margin-bottom:0;">
+                        Pago em {{ withdraw.paid_at|date:"d/m/Y \à\s H:i" }}
+                    </p>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+            </div>
+
+            <!-- Formulário de processamento -->
+            <div class="col-md-5">
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:1.5rem;">
+                    <p style="font-size:11px; letter-spacing:2px; text-transform:uppercase;
+                               color:#c9a84c; margin-bottom:16px;">
+                        {% if withdraw.status == 'paid' %}
+                        Saque já processado
+                        {% else %}
+                        Processar pagamento
+                        {% endif %}
+                    </p>
+
+                    {% if withdraw.status != 'paid' %}
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <div class="mb-4">
+                            <label class="form-label">
+                                Comprovante de pagamento
+                            </label>
+                            {{ form.receipt }}
+                            <small style="font-size:11px; color:#888; margin-top:6px;
+                                          display:block;">
+                                📌 Ao inserir o comprovante, o status será automaticamente
+                                marcado como <strong>PAGO</strong>.
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            {{ form.status }}
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">
+                                Observação
+                                <span style="font-size:11px; color:#aaa;
+                                             font-weight:normal;">(opcional)</span>
+                            </label>
+                            {{ form.note }}
+                        </div>
+
+                        <button type="submit" class="btn-gold w-100"
+                                style="padding:14px; font-size:12px;">
+                            <i class="bi bi-check-lg me-2"></i>Salvar
+                        </button>
+                    </form>
+
+                    {% else %}
+                    <div style="text-align:center; padding:2rem 0; color:#aaa;">
+                        <i class="bi bi-check-circle-fill"
+                           style="font-size:3rem; color:#2d5a2d;"></i>
+                        <p style="font-size:15px; font-weight:600; color:#2d5a2d;
+                                   margin-top:12px;">
+                            Saque pago com sucesso!
+                        </p>
+                        <p style="font-size:12px; color:#888;">
+                            Pago em {{ withdraw.paid_at|date:"d/m/Y \à\s H:i" }}
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    {% if withdraw.note %}
+                    <div style="background:#f9f6f0; border-radius:4px; padding:12px;
+                                margin-top:1rem;">
+                        <p style="font-size:11px; color:#888; margin-bottom:4px;
+                                   letter-spacing:1px; text-transform:uppercase;">
+                            Observação
+                        </p>
+                        <p style="font-size:13px; color:#555; margin:0;">
+                            {{ withdraw.note }}
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

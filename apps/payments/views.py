@@ -9,10 +9,16 @@ from django.utils import timezone
 from django.conf import settings
 from apps.products.models import Ebook
 from apps.delivery.utils import create_download_token
-from .models import Order, Payment
+from .models import Order, Payment, WithdrawRequest
 from .asaas import create_charge, get_charge, get_pix_qrcode
 from .emails import send_purchase_confirmation, send_new_sale_notification
 import json
+
+from django.contrib.admin.views.decorators import staff_member_required
+from functools import wraps
+from django.core.paginator import Paginator
+from .forms import WithdrawReceiptForm
+
 
 
 # ── Checkout ───────────────────────────────────────────────
@@ -375,4 +381,162 @@ def my_orders_view(request):
         'paid_orders'     : paid_orders,
         'pending_orders'  : pending_orders,
         'cancelled_orders': cancelled_orders,
+    })
+
+
+def superuser_required(view_func):
+    """Decorator — permite acesso apenas a superusuários."""
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated or not request.user.is_superuser:
+            messages.error(request, 'Acesso restrito ao administrador.')
+            return redirect('accounts:login')
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
+@superuser_required
+def admin_withdraws_view(request):
+    """Lista todos os pedidos de saque — painel do administrador."""
+
+    status_filter = request.GET.get('status', '')
+    search        = request.GET.get('q', '')
+
+    withdraws = WithdrawRequest.objects.select_related('producer').order_by('-created_at')
+
+    if status_filter:
+        withdraws = withdraws.filter(status=status_filter)
+
+    if search:
+        withdraws = withdraws.filter(
+            producer__username__icontains=search
+        ) | withdraws.filter(
+            producer__first_name__icontains=search
+        ) | withdraws.filter(
+            producer__email__icontains=search
+        )
+
+    # Totais para os cards
+    from django.db.models import Sum, Count
+    totals = {
+        'pending' : WithdrawRequest.objects.filter(status='pending').aggregate(
+            count=Count('id'), total=Sum('amount')
+        ),
+        'approved': WithdrawRequest.objects.filter(status='approved').aggregate(
+            count=Count('id'), total=Sum('amount')
+        ),
+        'paid'    : WithdrawRequest.objects.filter(status='paid').aggregate(
+            count=Count('id'), total=Sum('amount')
+        ),
+    }
+
+    # Paginação
+    paginator = Paginator(withdraws, 20)
+    page      = request.GET.get('page', 1)
+    withdraws = paginator.get_page(page)
+
+    return render(request, 'admin_panel/withdraws.html', {
+        'withdraws'    : withdraws,
+        'totals'       : totals,
+        'status_filter': status_filter,
+        'search'       : search,
+    })
+
+
+@superuser_required
+def admin_withdraw_detail_view(request, pk):
+    """Detalhe de um pedido de saque — upload do comprovante."""
+    withdraw = get_object_or_404(WithdrawRequest, pk=pk)
+    form     = WithdrawReceiptForm(
+        request.POST  or None,
+        request.FILES or None,
+        instance=withdraw
+    )
+
+    if request.method == 'POST':
+        if form.is_valid():
+            form.save()
+            if withdraw.receipt:
+                messages.success(
+                    request,
+                    f'Comprovante enviado! Saque marcado como PAGO automaticamente.'
+                )
+            else:
+                messages.success(request, 'Saque atualizado com sucesso.')
+            return redirect('payments:admin_withdraws')
+
+    return render(request, 'admin_panel/withdraw_detail.html', {
+        'withdraw': withdraw,
+        'form'    : form,
+    })
+
+@superuser_required
+def admin_commissions_view(request):
+    """Relatório de comissões por produtor."""
+    from django.db.models import Sum, Count
+    from apps.accounts.models import User
+    from .models import PlatformConfig
+
+    config     = PlatformConfig.get()
+    commission = config.commission_percent / 100
+
+    # Agrupa vendas por produtor
+    sales = Order.objects.filter(
+        status='paid'
+    ).values(
+        'ebook__author__id',
+        'ebook__author__first_name',
+        'ebook__author__last_name',
+        'ebook__author__username',
+        'ebook__author__email',
+    ).annotate(
+        total_orders = Count('id'),
+        gross        = Sum('amount'),
+    ).order_by('-gross')
+
+    # Calcula comissão e líquido por produtor
+    producers = []
+    total_gross_all      = 0
+    total_commission_all = 0
+    total_net_all        = 0
+
+    for s in sales:
+        gross      = s['gross'] or 0
+        comm       = gross * commission
+        net        = gross - comm
+
+        total_gross_all      += gross
+        total_commission_all += comm
+        total_net_all        += net
+
+        # Saques já realizados pelo produtor
+        withdrawn = WithdrawRequest.objects.filter(
+            producer_id = s['ebook__author__id'],
+            status__in  = ['approved', 'paid']
+        ).aggregate(t=Sum('amount'))['t'] or 0
+
+        producers.append({
+            'id'        : s['ebook__author__id'],
+            'name'      : f"{s['ebook__author__first_name']} {s['ebook__author__last_name']}".strip()
+                          or s['ebook__author__username'],
+            'username'  : s['ebook__author__username'],
+            'email'     : s['ebook__author__email'],
+            'orders'    : s['total_orders'],
+            'gross'     : gross,
+            'commission': comm,
+            'net'       : net,
+            'withdrawn' : withdrawn,
+            'available' : net - withdrawn,
+        })
+
+    totals = {
+        'gross'     : total_gross_all,
+        'commission': total_commission_all,
+        'net'       : total_net_all,
+    }
+
+    return render(request, 'admin_panel/commissions.html', {
+        'producers'         : producers,
+        'totals'            : totals,
+        'commission_percent': config.commission_percent,
     })

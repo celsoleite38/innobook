@@ -1,0 +1,304 @@
+{% extends 'base.html' %}
+{% block title %}Gestão de Saques — BookHub Admin{% endblock %}
+
+{% block content %}
+
+<section style="background:#1a1a2e; padding:32px 0;">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <p style="color:#c9a84c; font-size:11px; letter-spacing:3px;
+                          text-transform:uppercase; margin-bottom:8px;">
+                    Administrador
+                </p>
+                <h1 style="font-family:'Playfair Display',serif; color:#f5f0e8;
+                           font-size:28px; font-weight:600; margin:0;">
+                    Gestão de Saques
+                </h1>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'payments:admin_commissions' %}"
+                class="btn-outline-gold"
+                style="padding:8px 18px; font-size:11px;">
+                    <i class="bi bi-percent me-1"></i>Comissões
+                </a>
+                <a href="{% url 'admin:index' %}"
+                style="color:#c9a84c; font-size:12px; text-decoration:none;
+                        padding:8px 0;">
+                    <i class="bi bi-grid me-1"></i>Admin Django
+                </a>
+            
+    </div>
+</section>
+
+<section class="py-5 bg-cream">
+    <div class="container">
+
+        <!-- Cards de resumo -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div style="background:#fff; border:0.5px solid #e8d5a3;
+                            border-left:3px solid #c9a84c; border-radius:6px;
+                            padding:1.2rem; display:flex; align-items:center; gap:16px;">
+                    <div style="width:44px; height:44px; background:#fdf8ee;
+                                border-radius:50%; display:flex; align-items:center;
+                                justify-content:center; flex-shrink:0;">
+                        <i class="bi bi-hourglass-split text-gold" style="font-size:18px;"></i>
+                    </div>
+                    <div>
+                        <p style="font-family:'Playfair Display',serif; font-size:22px;
+                                   font-weight:600; color:#1a1a2e; margin-bottom:0;">
+                            {{ totals.pending.count|default:0 }}
+                            <small style="font-size:13px; color:#888;">pedidos</small>
+                        </p>
+                        <p style="font-size:12px; color:#888; margin:0;">
+                            Pendentes ·
+                            <strong style="color:#c9a84c;">
+                                R$ {{ totals.pending.total|default:"0.00" }}
+                            </strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div style="background:#fff; border:0.5px solid #b8d8b8;
+                            border-left:3px solid #2d5a2d; border-radius:6px;
+                            padding:1.2rem; display:flex; align-items:center; gap:16px;">
+                    <div style="width:44px; height:44px; background:#f0f7f0;
+                                border-radius:50%; display:flex; align-items:center;
+                                justify-content:center; flex-shrink:0;">
+                        <i class="bi bi-check-circle" style="font-size:18px; color:#2d5a2d;"></i>
+                    </div>
+                    <div>
+                        <p style="font-family:'Playfair Display',serif; font-size:22px;
+                                   font-weight:600; color:#1a1a2e; margin-bottom:0;">
+                            {{ totals.paid.count|default:0 }}
+                            <small style="font-size:13px; color:#888;">pedidos</small>
+                        </p>
+                        <p style="font-size:12px; color:#888; margin:0;">
+                            Pagos ·
+                            <strong style="color:#2d5a2d;">
+                                R$ {{ totals.paid.total|default:"0.00" }}
+                            </strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div style="background:#fff; border:0.5px solid #c0c8e8;
+                            border-left:3px solid #1a1a6e; border-radius:6px;
+                            padding:1.2rem; display:flex; align-items:center; gap:16px;">
+                    <div style="width:44px; height:44px; background:#f0f4ff;
+                                border-radius:50%; display:flex; align-items:center;
+                                justify-content:center; flex-shrink:0;">
+                        <i class="bi bi-check2-all" style="font-size:18px; color:#1a1a6e;"></i>
+                    </div>
+                    <div>
+                        <p style="font-family:'Playfair Display',serif; font-size:22px;
+                                   font-weight:600; color:#1a1a2e; margin-bottom:0;">
+                            {{ totals.approved.count|default:0 }}
+                            <small style="font-size:13px; color:#888;">pedidos</small>
+                        </p>
+                        <p style="font-size:12px; color:#888; margin:0;">
+                            Aprovados ·
+                            <strong style="color:#1a1a6e;">
+                                R$ {{ totals.approved.total|default:"0.00" }}
+                            </strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div style="background:#fff; border:0.5px solid #e0d8cc;
+                    border-radius:6px; padding:1rem 1.5rem; margin-bottom:1.5rem;">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label">Buscar Escritor</label>
+                    <input type="text" name="q" value="{{ search }}"
+                           class="form-control" placeholder="Nome, usuário ou email...">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="pending"  {% if status_filter == 'pending' %}selected{% endif %}>
+                            Pendentes
+                        </option>
+                        <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>
+                            Aprovados
+                        </option>
+                        <option value="paid"     {% if status_filter == 'paid' %}selected{% endif %}>
+                            Pagos
+                        </option>
+                        <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>
+                            Rejeitados
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn-gold w-100"
+                            style="padding:10px;">
+                        Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Tabela de saques -->
+        <div style="background:#fff; border:0.5px solid #e0d8cc;
+                    border-radius:6px; overflow:hidden;">
+            {% if withdraws %}
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Escritor</th>
+                            <th>Chave PIX</th>
+                            <th class="text-end">Valor</th>
+                            <th class="text-center">Data</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Comprovante</th>
+                            <th class="text-center">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for w in withdraws %}
+                        <tr>
+                            <td style="font-size:12px; color:#aaa;">{{ w.pk }}</td>
+
+                            <!-- Produtor -->
+                            <td>
+                                <p style="font-size:13px; font-weight:600;
+                                           color:#1a1a2e; margin-bottom:2px;">
+                                    {{ w.producer.get_full_name|default:w.producer.username }}
+                                </p>
+                                <small style="font-size:11px; color:#aaa;">
+                                    {{ w.producer.email }}
+                                </small>
+                            </td>
+
+                            <!-- PIX -->
+                            <td>
+                                <p style="font-size:12px; color:#1a1a2e; margin-bottom:1px;">
+                                    {{ w.pix_key }}
+                                </p>
+                                <small style="font-size:10px; color:#aaa;">
+                                    {{ w.pix_type|upper }}
+                                </small>
+                            </td>
+
+                            <!-- Valor -->
+                            <td class="text-end">
+                                <span style="font-family:'Playfair Display',serif;
+                                             font-size:16px; color:#c9a84c; font-weight:600;">
+                                    R$ {{ w.amount }}
+                                </span>
+                            </td>
+
+                            <!-- Data -->
+                            <td class="text-center">
+                                <p style="font-size:12px; color:#1a1a2e; margin-bottom:1px;">
+                                    {{ w.created_at|date:"d/m/Y" }}
+                                </p>
+                                <small style="font-size:11px; color:#aaa;">
+                                    {{ w.created_at|date:"H:i" }}
+                                </small>
+                            </td>
+
+                            <!-- Status -->
+                            <td class="text-center">
+                                <span style="font-size:10px; padding:4px 12px;
+                                             border-radius:20px; font-weight:500;
+                                             letter-spacing:0.5px;
+                                             {% if w.status == 'paid' %}
+                                                 background:#f0f7f0; color:#2d5a2d;
+                                                 border:0.5px solid #b8d8b8;
+                                             {% elif w.status == 'pending' %}
+                                                 background:#fdf8ee; color:#8a6000;
+                                                 border:0.5px solid #e8d5a3;
+                                             {% elif w.status == 'approved' %}
+                                                 background:#f0f4ff; color:#1a1a6e;
+                                                 border:0.5px solid #c0c8e8;
+                                             {% else %}
+                                                 background:#fdf0f0; color:#8b2020;
+                                                 border:0.5px solid #e8b8b8;
+                                             {% endif %}">
+                                    {% if w.status == 'paid' %}✓ PAGO
+                                    {% elif w.status == 'pending' %}⏳ Pendente
+                                    {% elif w.status == 'approved' %}✔ Aprovado
+                                    {% else %}✗ Rejeitado
+                                    {% endif %}
+                                </span>
+                            </td>
+
+                            <!-- Comprovante -->
+                            <td class="text-center">
+                                {% if w.receipt %}
+                                <a href="{{ w.receipt.url }}" target="_blank"
+                                   style="color:#2d5a2d; font-size:18px;"
+                                   title="Ver comprovante">
+                                    <i class="bi bi-file-image"></i>
+                                </a>
+                                {% else %}
+                                <span style="color:#ddd; font-size:18px;">
+                                    <i class="bi bi-file-image"></i>
+                                </span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Ação -->
+                            <td class="text-center">
+                                <a href="{% url 'payments:admin_withdraw_detail' w.pk %}"
+                                   class="btn-navy"
+                                   style="padding:5px 14px; font-size:10px;">
+                                    {% if w.status == 'pending' or w.status == 'approved' %}
+                                    Processar
+                                    {% else %}
+                                    Ver
+                                    {% endif %}
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginação -->
+            {% if withdraws.has_other_pages %}
+            <div style="padding:1rem; border-top:0.5px solid #e0d8cc;
+                        display:flex; justify-content:center; gap:8px;">
+                {% if withdraws.has_previous %}
+                <a href="?page={{ withdraws.previous_page_number }}&status={{ status_filter }}&q={{ search }}"
+                   class="btn-outline-gold" style="padding:5px 14px; font-size:11px;">
+                    ← Anterior
+                </a>
+                {% endif %}
+                <span style="font-size:13px; color:#888; padding:5px 14px;">
+                    Página {{ withdraws.number }} de {{ withdraws.paginator.num_pages }}
+                </span>
+                {% if withdraws.has_next %}
+                <a href="?page={{ withdraws.next_page_number }}&status={{ status_filter }}&q={{ search }}"
+                   class="btn-outline-gold" style="padding:5px 14px; font-size:11px;">
+                    Próxima →
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5" style="color:#aaa;">
+                <i class="bi bi-inbox" style="font-size:3rem; color:#c9a84c;"></i>
+                <p class="mt-3" style="font-size:14px;">
+                    Nenhum pedido de saque encontrado.
+                </p>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+</section>
+{% endblock %}
