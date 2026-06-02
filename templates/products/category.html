@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+{% block title %}{{ category.name }} — BookHub{% endblock %}
+
+{% block content %}
+
+<!-- Header da categoria -->
+<section style="background:#1a1a2e; padding:40px 0;">
+    <div class="container">
+        <p style="color:#c9a84c; font-size:11px; letter-spacing:3px;
+                  text-transform:uppercase; margin-bottom:8px;">
+            Categoria
+        </p>
+        <div class="d-flex align-items-center gap-3">
+            {% if category.icon %}
+            <span style="font-size:2.5rem;">{{ category.icon }}</span>
+            {% endif %}
+            <div>
+                <h1 style="font-family:'Playfair Display',serif; color:#f5f0e8;
+                           font-size:32px; font-weight:600; margin:0;">
+                    {{ category.name }}
+                </h1>
+                {% if category.description %}
+                <p style="color:#aaa; font-size:14px; margin:6px 0 0;">
+                    {{ category.description }}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Breadcrumb -->
+<section style="background:#fff; padding:12px 0;
+                border-bottom:0.5px solid #e0d8cc;">
+    <div class="container">
+        <nav style="font-size:12px; color:#888;">
+            <a href="{% url 'products:home' %}"
+               style="color:#c9a84c; text-decoration:none;">Início</a>
+            <span class="mx-2">›</span>
+            <a href="{% url 'products:list' %}"
+               style="color:#888; text-decoration:none;">Catálogo</a>
+            <span class="mx-2">›</span>
+            <span style="color:#1a1a2e;">{{ category.name }}</span>
+        </nav>
+    </div>
+</section>
+
+<!-- eBooks da categoria -->
+<section class="py-5 bg-cream">
+    <div class="container">
+
+        <!-- Contador -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <p style="font-size:13px; color:#888; margin:0;">
+                <strong style="color:#1a1a2e;">{{ ebooks.count }}</strong>
+                eBook{{ ebooks.count|pluralize }} encontrado{{ ebooks.count|pluralize }}
+            </p>
+            <!-- Outras categorias -->
+            <a href="{% url 'products:list' %}"
+               class="btn-outline-gold"
+               style="padding:6px 16px; font-size:11px;">
+                Ver todas as categorias
+            </a>
+        </div>
+
+        {% if ebooks %}
+        <div class="row g-4">
+            {% for ebook in ebooks %}
+            <div class="col-sm-6 col-md-4 col-lg-3">
+                <div class="ebook-card">
+                    <div class="position-relative">
+                        {% if ebook.cover %}
+                        <img src="{{ ebook.cover.url }}"
+                             class="ebook-card-img" alt="{{ ebook.title }}">
+                        {% else %}
+                        <div class="ebook-card-img-placeholder">📚</div>
+                        {% endif %}
+                        {% if ebook.featured %}
+                        <span class="badge-gold position-absolute"
+                              style="top:10px; left:10px;">Destaque</span>
+                        {% endif %}
+                        {% if ebook.discount_price %}
+                        <span class="badge-gold position-absolute"
+                              style="top:10px; right:10px; background:#8b2020;">
+                            Promo
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="ebook-card-body">
+                        <div class="ebook-card-cat">{{ category.name }}</div>
+                        <div class="ebook-card-title">{{ ebook.title }}</div>
+                        <div class="ebook-card-author">
+                            {{ ebook.author.get_full_name|default:ebook.author.username }}
+                        </div>
+
+                        <!-- Formatos disponíveis -->
+                        <div class="d-flex gap-1 mb-2 flex-wrap">
+                            <span style="font-size:9px; color:#888; background:#f9f6f0;
+                                         padding:1px 6px; border-radius:10px;
+                                         border:0.5px solid #d0c8bc;">PDF</span>
+                            {% if ebook.file_epub %}
+                            <span style="font-size:9px; color:#1a5e2e; background:#f0fff4;
+                                         padding:1px 6px; border-radius:10px;
+                                         border:0.5px solid #b8d8c0;">EPUB</span>
+                            {% endif %}
+                            {% if ebook.file_mobi %}
+                            <span style="font-size:9px; color:#8a4a00; background:#fff8f0;
+                                         padding:1px 6px; border-radius:10px;
+                                         border:0.5px solid #e8d0b0;">MOBI</span>
+                            {% endif %}
+                            {% if ebook.bonuses.count %}
+                            <span style="font-size:9px; color:#c9a84c; background:#fdf8ee;
+                                         padding:1px 6px; border-radius:10px;
+                                         border:0.5px solid #e8d5a3;">
+                                🎁 {{ ebook.bonuses.count }} bônus
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex align-items-center justify-content-between mt-1">
+                            {% if ebook.discount_price %}
+                            <div>
+                                <small style="color:#aaa; text-decoration:line-through;
+                                              font-size:11px;">
+                                    R$ {{ ebook.price }}
+                                </small><br>
+                                <span class="ebook-price">R$ {{ ebook.get_price }}</span>
+                            </div>
+                            {% else %}
+                            <span class="ebook-price">R$ {{ ebook.get_price }}</span>
+                            {% endif %}
+                            <a href="{% url 'products:detail' ebook.slug %}"
+                               class="btn-navy"
+                               style="padding:6px 16px; font-size:10px;">
+                               Ver mais
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% else %}
+        <!-- Nenhum eBook nesta categoria -->
+        <div class="text-center py-5">
+            <span style="font-size:4rem;">
+               <img src="/static/images/books.png" alt="logo" style="height:200px; vertical-align: middle; border-radius: 18px;">
+            </span>
+            <h3 style="font-family:'Playfair Display',serif; margin-top:1rem;
+                        color:#1a1a2e;">
+                Nenhum eBook em {{ category.name }}
+            </h3>
+            <p style="color:#888; margin-bottom:1.5rem;">
+                Esta categoria ainda não possui eBooks publicados.
+            </p>
+            <a href="{% url 'products:list' %}" class="btn-gold">
+                Ver todo o catálogo
+            </a>
+        </div>
+        {% endif %}
+
+    </div>
+</section>
+
+<!-- Outras categorias -->
+<section class="py-4 bg-white">
+    <div class="container">
+        <p style="font-size:11px; letter-spacing:2px; text-transform:uppercase;
+                   color:#c9a84c; margin-bottom:12px; text-align:center;">
+            Explorar outras categorias
+        </p>
+        <div class="d-flex gap-2 flex-wrap justify-content-center">
+            <a href="{% url 'products:list' %}" class="cat-pill">Todos</a>
+            {% for cat in request.resolver_match.kwargs|default:'' %}{% endfor %}
+        </div>
+    </div>
+</section>
+
+{% endblock %}

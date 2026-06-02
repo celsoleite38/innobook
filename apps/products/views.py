@@ -72,9 +72,15 @@ def ebook_detail_view(request, slug):
 
 
 def category_view(request, slug):
-    category = get_object_or_404(Category, slug=slug)
-    ebooks   = Ebook.objects.filter(category=category, status='published')
+    category   = get_object_or_404(Category, slug=slug)
+    ebooks     = Ebook.objects.filter(
+        category=category,
+        status='published'
+    ).order_by('-created_at')
+    categories = Category.objects.all()
+
     return render(request, 'products/category.html', {
-        'category': category,
-        'ebooks'  : ebooks,
+        'category'  : category,
+        'ebooks'    : ebooks,
+        'categories': categories,
     })
