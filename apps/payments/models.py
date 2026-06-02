@@ -147,3 +147,143 @@ class Payment(models.Model):
 
     def __str__(self):
         return f'{self.get_method_display()} — Pedido #{self.order.order_id}'
+    
+
+    # ── Configuração da plataforma ──────────────────────────────
+class PlatformConfig(models.Model):
+    """
+    Configurações globais da plataforma.
+    Apenas um registro deve existir (singleton).
+    """
+    commission_percent = models.DecimalField(
+        max_digits=5, decimal_places=2,
+        default=10.00,
+        verbose_name='Comissão da plataforma (%)'
+    )
+    min_withdraw      = models.DecimalField(
+        max_digits=8, decimal_places=2,
+        default=50.00,
+        verbose_name='Valor mínimo para saque (R$)'
+    )
+    withdraw_info     = models.TextField(
+        blank=True,
+        verbose_name='Instruções de saque',
+        default='Os saques são processados em até 5 dias úteis via PIX.'
+    )
+    updated_at        = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name        = 'Configuração da Plataforma'
+        verbose_name_plural = 'Configuração da Plataforma'
+
+    def __str__(self):
+        return f'Configuração — {self.commission_percent}% de comissão'
+
+    @classmethod
+    def get(cls):
+        """Retorna a configuração singleton."""
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+# ── Dados bancários do produtor ─────────────────────────────
+class ProducerBankData(models.Model):
+    """Chave PIX do produtor para receber saques."""
+
+    PIX_CPF     = 'cpf'
+    PIX_CNPJ    = 'cnpj'
+    PIX_EMAIL   = 'email'
+    PIX_PHONE   = 'phone'
+    PIX_RANDOM  = 'random'
+
+    PIX_TYPES = [
+        (PIX_CPF,    'CPF'),
+        (PIX_CNPJ,   'CNPJ'),
+        (PIX_EMAIL,  'Email'),
+        (PIX_PHONE,  'Telefone'),
+        (PIX_RANDOM, 'Chave aleatória'),
+    ]
+
+    producer  = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='bank_data',
+        verbose_name='Produtor'
+    )
+    pix_type  = models.CharField(
+        max_length=20,
+        choices=PIX_TYPES,
+        verbose_name='Tipo de chave PIX'
+    )
+    pix_key   = models.CharField(
+        max_length=200,
+        verbose_name='Chave PIX'
+    )
+    full_name = models.CharField(
+        max_length=200,
+        verbose_name='Nome completo do titular'
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name        = 'Dados Bancários'
+        verbose_name_plural = 'Dados Bancários'
+
+    def __str__(self):
+        return f'PIX de {self.producer.username}: {self.pix_key}'
+
+# ── Solicitação de saque ─────────────────────────────────────
+class WithdrawRequest(models.Model):
+    """Solicitação de saque feita pelo produtor."""
+
+    STATUS_PENDING  = 'pending'
+    STATUS_APPROVED = 'approved'
+    STATUS_PAID     = 'paid'
+    STATUS_REJECTED = 'rejected'
+
+    STATUS_CHOICES = [
+        (STATUS_PENDING,  'Aguardando aprovação'),
+        (STATUS_APPROVED, 'Aprovado'),
+        (STATUS_PAID,     'Pago'),
+        (STATUS_REJECTED, 'Rejeitado'),
+    ]
+
+    producer    = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='withdraw_requests',
+        verbose_name='Produtor'
+    )
+    amount      = models.DecimalField(
+        max_digits=8, decimal_places=2,
+        verbose_name='Valor solicitado'
+    )
+    pix_key     = models.CharField(
+        max_length=200,
+        verbose_name='Chave PIX usada'
+    )
+    pix_type    = models.CharField(
+        max_length=20,
+        verbose_name='Tipo de chave PIX'
+    )
+    status      = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_PENDING,
+        verbose_name='Status'
+    )
+    note        = models.TextField(
+        blank=True,
+        verbose_name='Observação do admin'
+    )
+    created_at  = models.DateTimeField(auto_now_add=True)
+    updated_at  = models.DateTimeField(auto_now=True)
+    paid_at     = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name        = 'Solicitação de Saque'
+        verbose_name_plural = 'Solicitações de Saque'
+        ordering            = ['-created_at']
+
+    def __str__(self):
+        return f'Saque R$ {self.amount} — {self.producer.username} — {self.get_status_display()}'

@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}Solicitar Saque — BookHub{% endblock %}
+
+{% block content %}
+<section style="background:#1a1a2e; padding:32px 0;">
+    <div class="container">
+        <p style="color:#c9a84c; font-size:11px; letter-spacing:3px;
+                  text-transform:uppercase; margin-bottom:8px;">
+            Financeiro
+        </p>
+        <h1 style="font-family:'Playfair Display',serif; color:#f5f0e8;
+                   font-size:28px; font-weight:600; margin:0;">
+            Solicitar Saque
+        </h1>
+    </div>
+</section>
+
+<section class="py-5 bg-cream">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+
+                <!-- Saldo disponível -->
+                <div style="background:#1a1a2e; border-radius:6px;
+                            padding:1.5rem; margin-bottom:1.5rem; text-align:center;">
+                    <p style="font-size:11px; letter-spacing:2px; text-transform:uppercase;
+                               color:#aaa; margin-bottom:6px;">
+                        Saldo disponível para saque
+                    </p>
+                    <p style="font-family:'Playfair Display',serif; font-size:36px;
+                               color:#c9a84c; font-weight:600; margin-bottom:4px;">
+                        R$ {{ financial.available }}
+                    </p>
+                    <small style="font-size:11px; color:#666;">
+                        Mínimo para saque: R$ {{ financial.min_withdraw }}
+                    </small>
+                </div>
+
+                <!-- Dados PIX -->
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:1.2rem; margin-bottom:1.5rem;">
+                    <p style="font-size:11px; letter-spacing:1px; text-transform:uppercase;
+                               color:#c9a84c; margin-bottom:8px;">
+                        PIX de destino
+                    </p>
+                    <p style="font-size:14px; font-weight:600; color:#1a1a2e; margin-bottom:2px;">
+                        {{ bank_data.pix_key }}
+                    </p>
+                    <p style="font-size:12px; color:#888; margin:0;">
+                        {{ bank_data.get_pix_type_display }} ·
+                        {{ bank_data.full_name }}
+                    </p>
+                </div>
+
+                <!-- Formulário -->
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:1.5rem;">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            <label class="form-label">Valor do saque (R$)</label>
+                            {{ form.amount }}
+                            {% if form.amount.errors %}
+                            <div style="font-size:12px; color:#8b2020; margin-top:4px;">
+                                {{ form.amount.errors }}
+                            </div>
+                            {% endif %}
+                            <small style="font-size:11px; color:#888; margin-top:4px; display:block;">
+                                Máximo disponível: R$ {{ financial.available }}
+                            </small>
+                        </div>
+
+                        <div style="background:#fdf8ee; border:0.5px solid #e8d5a3;
+                                    border-radius:4px; padding:12px; margin-bottom:16px;">
+                            <p style="font-size:12px; color:#5a4a2d; margin:0; line-height:1.6;">
+                                <i class="bi bi-info-circle me-1"></i>
+                                {{ financial.withdraw_info }}
+                            </p>
+                        </div>
+
+                        <button type="submit" class="btn-gold w-100"
+                                style="padding:14px; font-size:12px;">
+                            <i class="bi bi-send me-2"></i>Confirmar solicitação
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-3">
+                        <a href="{% url 'accounts:financial' %}"
+                           style="font-size:12px; color:#888; text-decoration:none;">
+                            <i class="bi bi-arrow-left me-1"></i>Voltar ao financeiro
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

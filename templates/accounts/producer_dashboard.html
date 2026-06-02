@@ -1,15 +1,23 @@
 {% extends 'base.html' %}
-{% block title %}Painel do Produtor — Inno-Book{% endblock %}
+{% block title %}Painel do Escritor — Inno-Book{% endblock %}
 
 {% block content %}
 <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="fw-bold">
-            <i class="bi bi-bar-chart text-primary"></i> Painel do Produtor
+            <i class="bi bi-bar-chart text-primary"></i> Painel do Escritor
         </h2>
-        <a href="{% url 'accounts:ebook_create' %}" class="btn btn-primary">
-            <i class="bi bi-plus-lg"></i> Novo eBook
-        </a>
+        
+        <div class="d-flex gap-2">
+            <a href="{% url 'accounts:financial' %}" class="btn-outline-gold"
+            style="padding:8px 18px; font-size:11px;">
+                <i class="bi bi-cash-coin me-1"></i>Financeiro
+            </a>
+            <a href="{% url 'accounts:ebook_create' %}" class="btn-gold"
+            style="padding:8px 20px; font-size:11px;">
+                <i class="bi bi-plus-lg me-1"></i>Novo eBook
+            </a>
+        </div>
     </div>
 
     <!-- Cards de estatísticas -->
@@ -24,17 +32,29 @@
         <div class="col-md-4">
             <div class="card text-center p-4">
                 <i class="bi bi-bag-check text-success" style="font-size:2rem;"></i>
-                <h3 class="fw-bold mt-2">{{ stats.total_orders|default:0 }}</h3>
+                <h3 class="fw-bold mt-2">{{ financial.total_orders|default:0 }}</h3>
                 <small class="text-muted">Vendas realizadas</small>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card text-center p-4">
-                <i class="bi bi-cash-coin text-warning" style="font-size:2rem;"></i>
-                <h3 class="fw-bold mt-2">
-                    R$ {{ stats.total_revenue|default:"0.00" }}
-                </h3>
-                <small class="text-muted">Receita total</small>
+            <div style="background:#fff; border:0.5px solid #e0d8cc;
+                        border-radius:6px; padding:1.5rem; text-align:center;">
+                <div style="width:48px; height:48px; background:#1a1a2e;
+                            border-radius:50%; display:flex; align-items:center;
+                            justify-content:center; margin:0 auto 12px;">
+                    <i class="bi bi-cash-coin text-gold" style="font-size:20px;"></i>
+                </div>
+                <p style="font-family:'Playfair Display',serif; font-size:24px;
+                        font-weight:600; color:#1a1a2e; margin-bottom:2px;">
+                    R$ {{ financial.total_net|floatformat:2 }}
+                </p>
+                <p style="font-size:11px; letter-spacing:1px; text-transform:uppercase;
+                        color:#888; margin-bottom:6px;">
+                    Receita líquida
+                </p>
+                <small style="font-size:11px; color:#aaa;">
+                    Após comissão da plataforma
+                </small>
             </div>
         </div>
     </div>
@@ -62,7 +82,7 @@
                             <span class="badge bg-primary">{{ sale.total }}</span>
                         </td>
                         <td class="text-end text-success fw-bold">
-                            R$ {{ sale.revenue }}
+                            R$ {{ sale.revenue|floatformat:2 }}
                         </td>
                     </tr>
                     {% endfor %}

@@ -60,6 +60,13 @@
                                 <i class="bi bi-speedometer2 me-2 text-gold"></i>Dashboard
                             </a>
                         </li>
+                        {% if user.is_producer %}
+                        <li>
+                            <a class="dropdown-item py-2" href="{% url 'accounts:financial' %}">
+                                <i class="bi bi-cash-coin me-2 text-gold"></i>Financeiro
+                            </a>
+                        </li>
+                        {% endif %}
                         <li>
                             <a class="dropdown-item py-2" href="{% url 'payments:my_orders' %}">
                                 <i class="bi bi-receipt me-2 text-gold"></i>Meus Pedidos
@@ -68,7 +75,7 @@
                         {% if user.is_producer %}
                         <li>
                             <a class="dropdown-item py-2" href="{% url 'accounts:producer' %}">
-                                <i class="bi bi-bar-chart me-2 text-gold"></i>Painel do Produtor
+                                <i class="bi bi-bar-chart me-2 text-gold"></i>Painel do Escritor
                             </a>
                         </li>
                         {% endif %}

@@ -1,0 +1,296 @@
+{% extends 'base.html' %}
+{% block title %}Financeiro — BookHub{% endblock %}
+
+{% block content %}
+<section style="background:#1a1a2e; padding:32px 0;">
+    <div class="container">
+        <p style="color:#c9a84c; font-size:11px; letter-spacing:3px;
+                  text-transform:uppercase; margin-bottom:8px;">
+            Escritor
+        </p>
+        <h1 style="font-family:'Playfair Display',serif; color:#f5f0e8;
+                   font-size:28px; font-weight:600; margin:0;">
+            Painel Financeiro
+        </h1>
+    </div>
+</section>
+
+<section class="py-5 bg-cream">
+    <div class="container">
+
+        <!-- Cards financeiros -->
+        <div class="row g-3 mb-5">
+
+            <!-- Receita bruta -->
+            <div class="col-md-3">
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:1.5rem; text-align:center;">
+                    <div style="width:44px; height:44px; background:#f9f6f0;
+                                border-radius:50%; display:flex; align-items:center;
+                                justify-content:center; margin:0 auto 10px;">
+                        <i class="bi bi-graph-up text-gold" style="font-size:18px;"></i>
+                    </div>
+                    <p style="font-family:'Playfair Display',serif; font-size:22px;
+                               font-weight:600; color:#1a1a2e; margin-bottom:2px;">
+                        R$ {{ financial.total_gross|floatformat:2 }}
+                    </p>
+                    <p style="font-size:11px; letter-spacing:1px; text-transform:uppercase;
+                               color:#888; margin:0;">
+                        Receita bruta
+                    </p>
+                    <small style="font-size:11px; color:#aaa;">
+                        {{ financial.total_orders }} venda{{ financial.total_orders|pluralize }}
+                    </small>
+                </div>
+            </div>
+
+            <!-- Comissão da plataforma -->
+            <div class="col-md-3">
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:1.5rem; text-align:center;">
+                    <div style="width:44px; height:44px; background:#fdf0f0;
+                                border-radius:50%; display:flex; align-items:center;
+                                justify-content:center; margin:0 auto 10px;">
+                        <i class="bi bi-percent" style="font-size:18px; color:#8b2020;"></i>
+                    </div>
+                    <p style="font-family:'Playfair Display',serif; font-size:22px;
+                               font-weight:600; color:#8b2020; margin-bottom:2px;">
+                        - R$ {{ financial.total_commission|floatformat:2 }}
+                    </p>
+                    <p style="font-size:11px; letter-spacing:1px; text-transform:uppercase;
+                               color:#888; margin:0;">
+                        Comissão {{ financial.commission_percent }}%
+                    </p>
+                </div>
+            </div>
+
+            <!-- Receita líquida -->
+            <div class="col-md-3">
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:1.5rem; text-align:center;">
+                    <div style="width:44px; height:44px; background:#f0f7f0;
+                                border-radius:50%; display:flex; align-items:center;
+                                justify-content:center; margin:0 auto 10px;">
+                        <i class="bi bi-cash-coin" style="font-size:18px; color:#2d5a2d;"></i>
+                    </div>
+                    <p style="font-family:'Playfair Display',serif; font-size:22px;
+                               font-weight:600; color:#2d5a2d; margin-bottom:2px;">
+                        R$ {{ financial.total_net|floatformat:2 }}
+                    </p>
+                    <p style="font-size:11px; letter-spacing:1px; text-transform:uppercase;
+                               color:#888; margin:0;">
+                        Receita líquida
+                    </p>
+                </div>
+            </div>
+
+            <!-- Saldo disponível -->
+            <div class="col-md-3">
+                <div style="background:#1a1a2e; border-radius:6px;
+                            padding:1.5rem; text-align:center;">
+                    <div style="width:44px; height:44px; background:#c9a84c;
+                                border-radius:50%; display:flex; align-items:center;
+                                justify-content:center; margin:0 auto 10px;">
+                        <i class="bi bi-wallet2" style="font-size:18px; color:#1a1a2e;"></i>
+                    </div>
+                    <p style="font-family:'Playfair Display',serif; font-size:22px;
+                               font-weight:600; color:#c9a84c; margin-bottom:2px;">
+                        R$ {{ financial.available|floatformat:2 }}
+                    </p>
+                    <p style="font-size:11px; letter-spacing:1px; text-transform:uppercase;
+                               color:#aaa; margin-bottom:10px;">
+                        Disponível para saque
+                    </p>
+                    {% if financial.can_withdraw %}
+                    <a href="{% url 'accounts:withdraw' %}"
+                       class="btn-gold d-block text-center"
+                       style="padding:7px; font-size:11px;">
+                        Solicitar saque
+                    </a>
+                    {% else %}
+                    <small style="font-size:10px; color:#666;">
+                        Mínimo: R$ {{ financial.min_withdraw }}
+                    </small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+
+            <!-- Vendas por eBook -->
+            <div class="col-lg-7">
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; overflow:hidden;">
+                    <div style="padding:1rem 1.5rem; border-bottom:0.5px solid #e0d8cc;">
+                        <p style="font-size:11px; letter-spacing:2px; text-transform:uppercase;
+                                   color:#c9a84c; margin-bottom:2px;">
+                            Detalhamento
+                        </p>
+                        <h5 style="font-family:'Playfair Display',serif; margin:0; color:#1a1a2e;">
+                            Vendas por eBook
+                        </h5>
+                    </div>
+
+                    {% if sales %}
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>eBook</th>
+                                    <th class="text-center">Vendas</th>
+                                    <th class="text-end">Bruto</th>
+                                    <th class="text-end">Líquido</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sale in sales %}
+                                <tr>
+                                    <td style="font-size:13px; font-weight:500;
+                                               color:#1a1a2e;">
+                                        {{ sale.ebook__title|truncatechars:30 }}
+                                    </td>
+                                    <td class="text-center">
+                                        <span style="background:#f9f6f0; color:#c9a84c;
+                                                     font-size:12px; font-weight:600;
+                                                     padding:2px 10px; border-radius:20px;
+                                                     border:0.5px solid #e8d5a3;">
+                                            {{ sale.total_orders }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end"
+                                        style="font-size:13px; color:#555;">
+                                        R$ {{ sale.gross|floatformat:2 }}
+                                    </td>
+                                    <td class="text-end"
+                                        style="font-size:13px; font-weight:600;
+                                               color:#2d5a2d;">
+                                        R$ {{ sale.net|floatformat:2 }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4" style="color:#aaa;">
+                        <i class="bi bi-graph-up" style="font-size:2rem; color:#c9a84c;"></i>
+                        <p class="mt-2" style="font-size:13px;">
+                            Nenhuma venda ainda.
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Coluna direita -->
+            <div class="col-lg-5">
+
+                <!-- Chave PIX -->
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:1.5rem; margin-bottom:1.5rem;">
+                    <p style="font-size:11px; letter-spacing:2px; text-transform:uppercase;
+                               color:#c9a84c; margin-bottom:12px;">
+                        Minha chave PIX para saque
+                    </p>
+
+                    {% if bank_data %}
+                    <div style="background:#f9f6f0; border-radius:4px; padding:12px;
+                                margin-bottom:16px;">
+                        <small style="font-size:11px; color:#888; text-transform:uppercase;
+                                      letter-spacing:1px;">
+                            {{ bank_data.get_pix_type_display }}
+                        </small>
+                        <p style="font-size:15px; font-weight:600; color:#1a1a2e;
+                                   margin:4px 0 2px;">
+                            {{ bank_data.pix_key }}
+                        </p>
+                        <small style="font-size:12px; color:#888;">
+                            {{ bank_data.full_name }}
+                        </small>
+                    </div>
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <label class="form-label">Tipo de chave</label>
+                                {{ bank_form.pix_type }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Chave PIX</label>
+                                {{ bank_form.pix_key }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Nome e banco do titular&nbsp;&nbsp;<font color="#a19898">(José da Silva - Nubank)</font></label>
+                                {{ bank_form.full_name }}
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" name="save_bank"
+                                        class="btn-navy w-100"
+                                        style="padding:10px; font-size:11px;">
+                                    <i class="bi bi-check-lg me-1"></i>
+                                    Salvar chave PIX
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Histórico de saques -->
+                {% if withdraws %}
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; overflow:hidden;">
+                    <div style="padding:1rem 1.5rem; border-bottom:0.5px solid #e0d8cc;">
+                        <p style="font-size:11px; letter-spacing:2px; text-transform:uppercase;
+                                   color:#c9a84c; margin:0;">
+                            Histórico de saques
+                        </p>
+                    </div>
+                    {% for w in withdraws %}
+                    <div style="padding:12px 16px; border-bottom:0.5px solid #f0ebe3;
+                                display:flex; align-items:center; justify-content:space-between;">
+                        <div>
+                            <p style="font-size:14px; font-weight:600; color:#1a1a2e;
+                                       margin-bottom:2px;">
+                                R$ {{ w.amount }}
+                            </p>
+                            <small style="font-size:11px; color:#aaa;">
+                                {{ w.created_at|date:"d/m/Y" }}
+                                {% if w.note %}· {{ w.note }}{% endif %}
+                            </small>
+                        </div>
+                        <span style="font-size:10px; padding:3px 10px; border-radius:20px;
+                                     letter-spacing:0.5px;
+                                     {% if w.status == 'paid' %}
+                                         background:#f0f7f0; color:#2d5a2d; border:0.5px solid #b8d8b8;
+                                     {% elif w.status == 'pending' %}
+                                         background:#fdf8ee; color:#8a6000; border:0.5px solid #e8d5a3;
+                                     {% elif w.status == 'approved' %}
+                                         background:#f0f4ff; color:#1a1a6e; border:0.5px solid #c0c8e8;
+                                     {% else %}
+                                         background:#fdf0f0; color:#8b2020; border:0.5px solid #e8b8b8;
+                                     {% endif %}">
+                            {{ w.get_status_display }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+
+        <!-- Instrução de saque -->
+        <div style="background:#f9f6f0; border:0.5px solid #e0d8cc; border-radius:6px;
+                    padding:1rem 1.5rem; margin-top:1.5rem;">
+            <i class="bi bi-info-circle me-2 text-gold"></i>
+            <span style="font-size:13px; color:#555;">
+                {{ financial.withdraw_info }}
+            </span>
+        </div>
+
+    </div>
+</section>
+{% endblock %}

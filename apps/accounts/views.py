@@ -7,8 +7,11 @@ from .forms import LoginForm, RegisterForm, ProfileForm
 
 from apps.products.models import Ebook, EbookBonus
 from apps.products.forms import EbookForm, EbookBonusForm
-from apps.payments.models import Order
+from apps.payments.models import Order, WithdrawRequest, PlatformConfig
 from django.db.models import Sum, Count
+from apps.payments.forms import BankDataForm, WithdrawForm
+from apps.payments.finance import get_producer_financial, get_producer_sales_by_ebook
+
 
 
 @login_required
@@ -17,32 +20,22 @@ def producer_dashboard_view(request):
         messages.error(request, 'Acesso restrito a produtores.')
         return redirect('accounts:dashboard')
 
-    ebooks = request.user.ebooks.all().order_by('-created_at')
+    from apps.payments.finance import get_producer_financial
+    ebooks    = request.user.ebooks.all().order_by('-created_at')
+    financial = get_producer_financial(request.user)
 
-    # Estatísticas de vendas
-    stats = Order.objects.filter(
-        ebook__author=request.user,
-        status='paid'
-    ).aggregate(
-        total_orders  = Count('id'),
-        total_revenue = Sum('producer_amount'),
-    )
-
-    # Vendas por eBook
     sales_per_ebook = Order.objects.filter(
         ebook__author=request.user,
         status='paid'
-    ).values(
-        'ebook__title'
-    ).annotate(
+    ).values('ebook__title').annotate(
         total=Count('id'),
         revenue=Sum('producer_amount')
     ).order_by('-total')
 
     return render(request, 'accounts/producer_dashboard.html', {
-        'ebooks'          : ebooks,
-        'stats'           : stats,
-        'sales_per_ebook' : sales_per_ebook,
+        'ebooks'         : ebooks,
+        'financial'      : financial,
+        'sales_per_ebook': sales_per_ebook,
     })
 
 
@@ -198,3 +191,100 @@ def bonus_delete_view(request, pk):
     bonus.delete()
     messages.success(request, 'Bônus removido.')
     return redirect('accounts:ebook_bonuses', pk=ebook_pk)
+
+
+
+
+
+@login_required
+def financial_view(request):
+    """Painel financeiro completo do produtor."""
+    if not request.user.is_producer():
+        return redirect('accounts:dashboard')
+
+    financial  = get_producer_financial(request.user)
+    sales      = get_producer_sales_by_ebook(request.user)
+    withdraws  = request.user.withdraw_requests.all().order_by('-created_at')[:10]
+
+    # Form de dados bancários
+    try:
+        bank_data = request.user.bank_data
+    except Exception:
+        bank_data = None
+
+    bank_form = BankDataForm(
+        request.POST or None,
+        instance=bank_data
+    )
+
+    if request.method == 'POST' and 'save_bank' in request.POST:
+        if bank_form.is_valid():
+            bd          = bank_form.save(commit=False)
+            bd.producer = request.user
+            bd.save()
+            messages.success(request, 'Dados PIX salvos com sucesso!')
+            return redirect('accounts:financial')
+
+    return render(request, 'accounts/financial.html', {
+        'financial' : financial,
+        'sales'     : sales,
+        'withdraws' : withdraws,
+        'bank_form' : bank_form,
+        'bank_data' : bank_data,
+    })
+
+
+@login_required
+def withdraw_request_view(request):
+    """Solicitar saque."""
+    if not request.user.is_producer():
+        return redirect('accounts:dashboard')
+
+    financial = get_producer_financial(request.user)
+
+    if not financial['can_withdraw']:
+        messages.warning(
+            request,
+            f'Saldo insuficiente. Mínimo para saque: R$ {financial["min_withdraw"]}'
+        )
+        return redirect('accounts:financial')
+
+    try:
+        bank_data = request.user.bank_data
+    except Exception:
+        messages.warning(request, 'Cadastre sua chave PIX antes de solicitar um saque.')
+        return redirect('accounts:financial')
+
+    form = WithdrawForm(request.POST or None)
+
+    if request.method == 'POST':
+        if form.is_valid():
+            amount = form.cleaned_data['amount']
+
+            if amount > financial['available']:
+                messages.error(request, f'Valor maior que o saldo disponível (R$ {financial["available"]}).')
+                return redirect('accounts:withdraw')
+
+            if amount < financial['min_withdraw']:
+                messages.error(request, f'Valor mínimo para saque é R$ {financial["min_withdraw"]}.')
+                return redirect('accounts:withdraw')
+
+            WithdrawRequest.objects.create(
+                producer = request.user,
+                amount   = amount,
+                pix_key  = bank_data.pix_key,
+                pix_type = bank_data.pix_type,
+                status   = WithdrawRequest.STATUS_PENDING,
+            )
+            messages.success(
+                request,
+                f'Saque de R$ {amount} solicitado! '
+                f'Você receberá em sua chave PIX em até 5 dias úteis.'
+            )
+            return redirect('accounts:financial')
+
+    return render(request, 'accounts/withdraw.html', {
+        'form'     : form,
+        'financial': financial,
+        'bank_data': bank_data,
+    })
