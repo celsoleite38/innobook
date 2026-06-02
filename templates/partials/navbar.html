@@ -72,6 +72,10 @@
                                 <i class="bi bi-receipt me-2 text-gold"></i>Meus Pedidos
                             </a>
                         </li>
+                        <li>
+                            <a class="dropdown-item py-2" href="{% url 'cart:cart' %}">
+                                <i class="bi bi-journal-bookmark me-2 text-gold"></i>Meu Carrinho
+                            </a>
                         {% if user.is_producer %}
                         <li>
                             <a class="dropdown-item py-2" href="{% url 'accounts:producer' %}">
