@@ -78,6 +78,16 @@
                             </span>
                         </div>
 
+                        <div class="col-5" style="color:#888;">Titular e Banco</div>
+                        <div class="col-7" style="font-weight:600; color:#1a1a2e;">
+                            {% if withdraw.producer.bank_data.full_name %}
+                                {{ withdraw.producer.bank_data.full_name }}
+                            {% else %}
+                                <span style="color:#aaa;">Não informado</span>
+                            {% endif %}
+                        </div>
+
+
                         <div class="col-5" style="color:#888;">Valor</div>
                         <div class="col-7">
                             <span style="font-family:'Playfair Display',serif;
@@ -113,6 +123,8 @@
                         </div>
                     </div>
                 </div>
+
+                
 
                 <!-- Comprovante já enviado -->
                 {% if withdraw.receipt %}

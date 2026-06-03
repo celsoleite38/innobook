@@ -266,6 +266,11 @@ class WithdrawRequest(models.Model):
         max_length=20,
         verbose_name='Tipo de chave PIX'
     )
+    pix_holder  = models.CharField(
+    max_length=200,
+    blank=True,
+    verbose_name='Nome do titular'
+    )
     status      = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,

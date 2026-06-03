@@ -274,6 +274,7 @@ def withdraw_request_view(request):
                 amount   = amount,
                 pix_key  = bank_data.pix_key,
                 pix_type = bank_data.pix_type,
+                pix_holder= bank_data.full_name,
                 status   = WithdrawRequest.STATUS_PENDING,
             )
             messages.success(

@@ -59,7 +59,7 @@
                     </p>
                     <p style="font-size:11px; letter-spacing:1px; text-transform:uppercase;
                                color:#888; margin:0;">
-                        Comissão {{ financial.commission_percent }}%
+                        Desconto Operacional 
                     </p>
                 </div>
             </div>
@@ -199,11 +199,11 @@
                                 margin-bottom:16px;">
                         <small style="font-size:11px; color:#888; text-transform:uppercase;
                                       letter-spacing:1px;">
-                            {{ bank_data.get_pix_type_display }}
+                            Tipo: <strong>{{ bank_data.get_pix_type_display }}</strong> 
                         </small>
-                        <p style="font-size:15px; font-weight:600; color:#1a1a2e;
+                        <p style="font-size:15px; font-weight:400; color:#1a1a2e;
                                    margin:4px 0 2px;">
-                            {{ bank_data.pix_key }}
+                            Chave: <strong>{{ bank_data.pix_key }}</strong>
                         </p>
                         <small style="font-size:12px; color:#888;">
                             {{ bank_data.full_name }}

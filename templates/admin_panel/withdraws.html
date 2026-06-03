@@ -54,7 +54,7 @@
                         <p style="font-size:12px; color:#888; margin:0;">
                             Pendentes ·
                             <strong style="color:#c9a84c;">
-                                R$ {{ totals.pending.total|default:"0.00" }}
+                                R$ {{ totals.pending.total|floatformat:2|default:"0.00" }}
                             </strong>
                         </p>
                     </div>
@@ -72,13 +72,13 @@
                     <div>
                         <p style="font-family:'Playfair Display',serif; font-size:22px;
                                    font-weight:600; color:#1a1a2e; margin-bottom:0;">
-                            {{ totals.paid.count|default:0 }}
+                            {{ totals.paid.count }}
                             <small style="font-size:13px; color:#888;">pedidos</small>
                         </p>
                         <p style="font-size:12px; color:#888; margin:0;">
                             Pagos ·
                             <strong style="color:#2d5a2d;">
-                                R$ {{ totals.paid.total|default:"0.00" }}
+                                R$ {{ totals.paid.total|floatformat:2|default:"0.00" }}
                             </strong>
                         </p>
                     </div>
@@ -102,7 +102,7 @@
                         <p style="font-size:12px; color:#888; margin:0;">
                             Aprovados ·
                             <strong style="color:#1a1a6e;">
-                                R$ {{ totals.approved.total|default:"0.00" }}
+                                R$ {{ totals.approved.total|floatformat:2|default:"0.00" }}
                             </strong>
                         </p>
                     </div>
