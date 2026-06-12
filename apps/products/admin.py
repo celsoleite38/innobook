@@ -44,6 +44,8 @@ class EbookAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+    class Media:
+        js = ('js/validar_tamanho.js',)
 
 @admin.register(EbookBonus)
 class EbookBonusAdmin(admin.ModelAdmin):
@@ -54,3 +56,6 @@ class EbookBonusAdmin(admin.ModelAdmin):
     @admin.display(description='Formatos')
     def get_formats(self, obj):
         return ' | '.join(obj.get_available_formats()) or '—'
+    
+    class Media:
+        js = ('js/validar_tamanho.js',)
