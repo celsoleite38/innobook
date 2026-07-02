@@ -1,12 +1,12 @@
 {% extends 'base.html' %}
-{% block title %}Financeiro — Inno Book{% endblock %}
+{% block title %}Financeiro — Editora Orange{% endblock %}
 
 {% block content %}
 <section style="background:#1a1a2e; padding:32px 0;">
     <div class="container">
         <p style="color:#c9a84c; font-size:11px; letter-spacing:3px;
                   text-transform:uppercase; margin-bottom:8px;">
-            Escritor
+            Escritor: {{ user.first_name|default:user.username }}
         </p>
         <h1 style="font-family:'Playfair Display',serif; color:#f5f0e8;
                    font-size:28px; font-weight:600; margin:0;">

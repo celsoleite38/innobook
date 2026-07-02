@@ -2,7 +2,10 @@
     <div class="container">
         <div class="row g-4 mb-4">
             <div class="col-md-4">
-                <div class="footer-brand">Inno Book</div>
+                <div class="footer-brand">
+                    {% load static %} <img src="{% static 'images/logoorange.png' %}" alt="logo" style="height:40px; vertical-align: middle; border-radius: 18px;">
+                    Editora Orange
+                </div>
                 <p style="font-size:13px; line-height:1.7; color:#888;">
                     A plataforma premium para quem valoriza conhecimento.
                     eBooks selecionados, autores renomados.
@@ -38,7 +41,8 @@
         </div>
         <div style="border-top: 0.5px solid #333; padding-top: 1.5rem; text-align:center;">
             <small style="color:#555;">
-                © {% now "Y" %} Inno Book — Todos os direitos reservados.
+                {% load static %} <img src="{% static 'images/logoorange.png' %}" alt="logo" style="height:35px; vertical-align: middle; border-radius: 18px;">© {% now "Y" %} Editora Orange  — Todos os direitos reservados.
+                
                 Feito com <span style="color:#c9a84c;">♥</span> para amantes do conhecimento.
             </small>
         </div>
