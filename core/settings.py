@@ -72,6 +72,18 @@ DATABASES = {
     }
 }
 
+#DATABASES = {
+#        'default': {
+#        'ENGINE': 'django.db.backends.postgresql',
+#        'NAME': 'book_orange_db',
+#        'USER': 'book_orange_user',
+#        'PASSWORD': 'DefinaUmaSenhaForteAqui2',
+#        'HOST': 'localhost',
+#        'PORT': '5432',
+#    }
+#}
+
+
 # Senha
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
