@@ -20,7 +20,7 @@ def get_producer_financial(producer):
     total_orders = paid_orders.count()
 
     # Comissão e líquido
-    total_commission = total_gross * commission
+    total_commission = total_gross * Decimal(str(commission))
     total_net        = total_gross - total_commission
 
     # Total já sacado (aprovado ou pago)
