@@ -169,50 +169,72 @@ def failed_view(request, order_id=None):
 
 # ── Webhook Asaas ──────────────────────────────────────────
 
+from django.conf import settings
+from django.http import HttpResponse, JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+import json
+import logging
+
+logger = logging.getLogger(__name__)
+
 @csrf_exempt
+@require_POST
 def asaas_webhook(request):
-    if request.method != 'POST':
-        return HttpResponse(status=405)
+    # 1. Valida token do Asaas - 401 não pausa fila
+    #asaas_token = request.headers.get('asaas-access-token')
+    #if asaas_token != getattr(settings, 'ASAAS_WEBHOOK_TOKEN', None):
+    #    logger.warning(f"Webhook com token inválido: {asaas_token}")
+    #    return HttpResponse(status=401)
 
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:
-        return HttpResponse(status=400)
+        logger.error("Webhook Asaas com JSON inválido")
+        return HttpResponse(status=400) # 400 também não pausa
 
-    event   = data.get('event', '')
+    event = data.get('event', '')
     payment = data.get('payment', {})
 
     if not payment:
-        return HttpResponse(status=200)
+        return JsonResponse({"status": "ignored"}, status=200)
 
-    charge_id          = payment.get('id')
+    charge_id = payment.get('id')
     external_reference = payment.get('externalReference')
 
     if not external_reference:
-        return HttpResponse(status=200)
+        logger.info(f"Webhook sem externalReference: {charge_id}")
+        return JsonResponse({"status": "ignored"}, status=200)
 
     try:
         order = Order.objects.get(order_id=external_reference)
     except Order.DoesNotExist:
-        return HttpResponse(status=200)
+        logger.error(f"Pedido não encontrado no webhook: {external_reference}")
+        return JsonResponse({"status": "order_not_found"}, status=200)
 
-    # Pagamento confirmado
+    # 2. Idempotência - se já tá pago, só retorna 200
+    if order.status == Order.STATUS_PAID:
+        logger.info(f"Pedido {order.order_id} já pago. Ignorando webhook duplicado.")
+        return JsonResponse({"status": "already_paid"}, status=200)
+
+    # 3. Processa eventos
     if event in ('PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED'):
-        if order.status != Order.STATUS_PAID:
-            _confirm_order(order, charge_id)
+        _confirm_order(order, charge_id)
+        logger.info(f"Pedido {order.order_id} confirmado via webhook")
 
-    # Pagamento estornado
     elif event == 'PAYMENT_REFUNDED':
         order.status = Order.STATUS_REFUNDED
         order.save()
         order.download_tokens.update(is_active=False)
+        logger.info(f"Pedido {order.order_id} estornado")
 
-    # Pagamento cancelado/vencido
     elif event in ('PAYMENT_DELETED', 'PAYMENT_OVERDUE'):
         order.status = Order.STATUS_CANCELLED
         order.save()
+        logger.info(f"Pedido {order.order_id} cancelado/vencido")
 
-    return HttpResponse(status=200)
+    # 4. Sempre retorna 200 pro Asaas não pausar
+    return JsonResponse({"status": "received"}, status=200)
 
 
 # ── Helper interno ─────────────────────────────────────────

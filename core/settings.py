@@ -65,23 +65,23 @@ TEMPLATES = [
 WSGI_APPLICATION = 'core.wsgi.application'
 
 # Banco de dados
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
-
 #DATABASES = {
-#        'default': {
-#        'ENGINE': 'django.db.backends.postgresql',
-#        'NAME': 'book_orange_db',
-#        'USER': 'book_orange_user',
-#        'PASSWORD': 'DefinaUmaSenhaForteAqui2',
-#        'HOST': 'localhost',
-#        'PORT': '5432',
+#    'default': {
+#        'ENGINE': 'django.db.backends.sqlite3',
+#        'NAME': BASE_DIR / 'db.sqlite3',
 #    }
 #}
+
+DATABASES = {
+        'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'book_orange_db',
+        'USER': 'book_orange_user',
+        'PASSWORD': 'DefinaUmaSenhaForteAqui2',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
+}
 
 
 # Senha
@@ -133,6 +133,9 @@ ASAAS_URL     = (
     else 'https://api.asaas.com/api/v3'
 )
 
+from decouple import config
+
+ASAAS_WEBHOOK_TOKEN = config('ASAAS_WEBHOOK_TOKEN', default='')
 
 # Email
 EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'

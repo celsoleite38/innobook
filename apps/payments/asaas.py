@@ -2,134 +2,119 @@ import requests
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
-from payments.models import Payment
 
 def _headers():
-    """Headers padrão pra API do Asaas"""
+    if not settings.ASAAS_API_KEY:
+        raise Exception('ASAAS_API_KEY não configurada no.env')
     return {
-        "access_token": settings.ASAAS_API_KEY,
-        "Content-Type": "application/json"
+        'access_token': settings.ASAAS_API_KEY,
+        'Content-Type': 'application/json',
     }
 
 def _url(path):
-    """Monta URL completa baseado no env"""
-    return f"{settings.ASAAS_URL}{path}"
-
-def _check_asaas_response(response, context="Asaas"):
-    """Valida resposta do Asaas e levanta exceção com detalhe se der erro"""
-    if response.status_code >= 400:
-        try:
-            error_data = response.json()
-            errors = error_data.get('errors', [])
-            error_msg = errors[0].get('description') if errors else response.text
-        except:
-            error_msg = response.text
-        raise Exception(f"{context} error {response.status_code}: {error_msg}")
-    return response.json()
-
-def _due_date(billing_type):
-    """Define vencimento usando timezone local -03:00"""
-    agora_local = timezone.localtime()
-
-    if billing_type == 'PIX':
-        due = agora_local + timedelta(hours=25) # 25h = sempre amanhã
-    elif billing_type == 'BOLETO':
-        due = agora_local + timedelta(days=3)
-    else:
-        due = agora_local + timedelta(hours=25)
-
-    return due.strftime('%Y-%m-%d')
+    return f'{settings.ASAAS_URL}{path}'
 
 def get_or_create_customer(user):
-    """
-    Busca cliente por CPF ou cria novo. Usa PUT pra atualizar.
-    """
-    cpf = (user.cpf or '').strip()
-    if not cpf:
-        raise ValueError("Usuário sem CPF")
+    # Pega CPF do perfil. Se não tiver, usa um fake pra sandbox
+    cpf = getattr(user, 'cpf', '') or '00000000000'
+    cpf_limpo = ''.join(filter(str.isdigit, cpf))
 
-    # 1. Busca por CPF
+    if cpf_limpo == '00000000000' and 'sandbox' not in settings.ASAAS_URL:
+        raise Exception('CPF é obrigatório. Preencha no perfil.')
+
+    # Busca cliente existente
     response = requests.get(
         _url('/customers'),
         headers=_headers(),
-        params={'cpfCnpj': cpf},
-        timeout=30
+        params={'email': user.email}
     )
-    search = _check_asaas_response(response, "Buscar cliente")
-    existing_id = search['data'][0]['id'] if search.get('data') else None
+    data = response.json()
 
-    # 2. Monta payload
+    if data.get('data'):
+        customer = data['data'][0]
+        customer_id = customer['id']
+
+        # CPF vazio no Asaas → atualiza com PUT
+        if not customer.get('cpfCnpj') and cpf_limpo!= '00000000000':
+            put_resp = requests.put( # PUT não POST
+                _url(f'/customers/{customer_id}'),
+                headers=_headers(),
+                json={
+                    'name': user.get_full_name() or user.username,
+                    'email': user.email,
+                    'cpfCnpj': cpf_limpo,
+                }
+            )
+            if put_resp.status_code!= 200:
+                print(f'Erro ao atualizar CPF: {put_resp.text}')
+
+        return customer_id
+
+    # Cliente não existe — cria novo
     payload = {
-        "name": user.get_full_name() or user.username,
-        "cpfCnpj": cpf,
-        "email": user.email,
-        "mobilePhone": (user.phone or '').strip(),
+        'name': user.get_full_name() or user.username,
+        'email': user.email,
+        'cpfCnpj': cpf_limpo,
+        'notificationDisabled': False,
     }
+    response = requests.post(_url('/customers'), headers=_headers(), json=payload)
+    customer = response.json()
 
-    # 3. Atualiza com PUT se existe, senão cria com POST
-    if existing_id:
-        response = requests.put( # PUT pra atualizar, não POST
-            _url(f'/customers/{existing_id}'),
-            json=payload,
-            headers=_headers(),
-            timeout=30
-        )
-        customer = _check_asaas_response(response, "Atualizar cliente")
-    else:
-        response = requests.post(
-            _url('/customers'),
-            json=payload,
-            headers=_headers(),
-            timeout=30
-        )
-        customer = _check_asaas_response(response, "Criar cliente")
+    if 'id' not in customer:
+        raise Exception(f'Erro ao criar cliente no Asaas: {customer}')
 
-    # Salva no user
-    user.asaas_customer_id = customer['id']
-    user.save(update_fields=['asaas_customer_id'])
     return customer['id']
 
-def create_charge(order, billing_type):
-    """
-    Cria cobrança no Asaas com dueDate correto
-    """
+def create_charge(order, billing_type, card_data=None):
     customer_id = get_or_create_customer(order.buyer)
 
     payload = {
-        "customer": customer_id,
-        "billingType": billing_type,
-        "value": float(order.amount),
-        "dueDate": _due_date(billing_type),
-        "description": f"Pedido #{order.order_id}",
-        "externalReference": str(order.order_id),
+        'customer': customer_id,
+        'billingType': billing_type,
+        'value': float(order.amount),
+        'dueDate': _due_date(billing_type),
+        'description': f'BookHub — {order.ebook.title}',
+        'externalReference': str(order.order_id),
+        'postalService': False,
     }
 
-    response = requests.post(
-        _url('/payments'),
-        json=payload,
-        headers=_headers(),
-        timeout=30
-    )
-    charge = _check_asaas_response(response, "Criar cobrança")
-
-    # Atualiza ou cria Payment
-    Payment.objects.update_or_create(
-        order=order,
-        defaults={
-            "asaas_id": charge['id'],
-            "status": charge['status'],
-            "billing_type": billing_type,
-            "amount": order.amount,
-            "due_date": charge['dueDate']
+    if billing_type == 'CREDIT_CARD' and card_data:
+        payload['creditCard'] = {
+            'holderName': card_data.get('holder_name'),
+            'number': card_data.get('number'),
+            'expiryMonth': card_data.get('expiry_month'),
+            'expiryYear': card_data.get('expiry_year'),
+            'ccv': card_data.get('ccv'),
         }
-    )
+        payload['creditCardHolderInfo'] = {
+            'name': order.buyer_name,
+            'email': order.buyer_email,
+            'cpfCnpj': card_data.get('cpf', ''),
+            'postalCode': card_data.get('postal_code', ''),
+            'addressNumber': card_data.get('address_number', ''),
+            'phone': card_data.get('phone', ''),
+        }
+
+    response = requests.post(_url('/payments'), headers=_headers(), json=payload)
+    charge = response.json()
+
+    if 'id' not in charge:
+        raise Exception(f'Erro ao criar cobrança Asaas: {charge}')
+
     return charge
 
+def get_charge(charge_id):
+    response = requests.get(_url(f'/payments/{charge_id}'), headers=_headers())
+    return response.json()
+
 def get_pix_qrcode(charge_id):
-    """Busca QR Code do Pix"""
-    response = requests.get(
-        _url(f'/payments/{charge_id}/pixQrCode'),
-        headers=_headers(),
-        timeout=30
-    )
-    return _check_asaas_response(response, "Buscar QR Code Pix")
+    response = requests.get(_url(f'/payments/{charge_id}/pixQrCode'), headers=_headers())
+    return response.json()
+
+def _due_date(billing_type):
+    agora_local = timezone.localtime()
+    if billing_type == 'BOLETO':
+        due = agora_local + timedelta(days=3)
+    else: # PIX e CREDIT_CARD
+        due = agora_local + timedelta(hours=25) # Garante que é amanhã
+    return due.strftime('%Y-%m-%d')
