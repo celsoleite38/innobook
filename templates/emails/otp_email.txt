@@ -1,0 +1,13 @@
+Código de verificação — Inno Book
+
+Olá, {{ user.first_name|default:user.username }}!
+
+Use o código abaixo para concluir seu login (verificação em duas etapas):
+
+Código: {{ code }}
+
+Este código é válido por {{ validity }} minutos e só pode ser usado uma vez.
+Se você não tentou entrar na sua conta, ignore este e-mail.
+
+© Inno Book — Todos os direitos reservados.
+Dúvidas? Entre em contato: suporte@innosoft.com.br

@@ -1,0 +1,13 @@
+Confirme seu e-mail — Inno Book
+
+Olá, {{ user.first_name|default:user.username }}!
+
+Para liberar o acesso de escritor e garantir a segurança da sua conta,
+confirme seu e-mail acessando o link abaixo:
+
+{{ url }}
+
+Se você não criou uma conta na Inno Book, ignore este e-mail.
+
+© Inno Book — Todos os direitos reservados.
+Dúvidas? Entre em contato: suporte@innosoft.com.br

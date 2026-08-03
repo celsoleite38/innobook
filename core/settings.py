@@ -11,6 +11,13 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 
+if not SECRET_KEY or 'django-insecure' in (SECRET_KEY or ''):
+    import warnings
+    warnings.warn(
+        'SECRET_KEY ausente ou insegura no .env — configure uma chave aleatória '
+        'forte antes de ir para produção.'
+    )
+
 csrf_env = os.getenv('CSRF_TRUSTED_ORIGINS', '')
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_env.split(',') if origin.strip()]
 
@@ -40,6 +47,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'apps.accounts.middleware.TwoFactorVerificationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -64,24 +72,29 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-# Banco de dados
-#DATABASES = {
-#    'default': {
-#        'ENGINE': 'django.db.backends.sqlite3',
-#        'NAME': BASE_DIR / 'db.sqlite3',
-#    }
-#}
-
+# Banco de dados (SQLite em dev, PostgreSQL em produção — definido via .env)
 DATABASES = {
-        'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'book_orange_db',
-        'USER': 'book_orange_user',
-        'PASSWORD': 'DefinaUmaSenhaForteAqui2',
-        'HOST': 'localhost',
-        'PORT': '5432',
+    'default': {
+        'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.sqlite3'),
+        'NAME': os.getenv('DB_NAME', str(BASE_DIR / 'db.sqlite3')),
+        'USER': os.getenv('DB_USER', ''),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', ''),
+        'PORT': os.getenv('DB_PORT', ''),
     }
 }
+
+# Segurança HTTP (habilite no .env quando estiver atrás de proxy/nginx + HTTPS)
+SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'False') == 'True'
+SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'False') == 'True'
+CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE', 'False') == 'True'
+SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', '0'))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = (
+    os.getenv('SECURE_HSTS_INCLUDE_SUBDOMAINS', 'False') == 'True'
+)
+SECURE_HSTS_PRELOAD = os.getenv('SECURE_HSTS_PRELOAD', 'False') == 'True'
+if os.getenv('USE_PROXY_SSL', 'False') == 'True':
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
 # Senha
@@ -133,9 +146,7 @@ ASAAS_URL     = (
     else 'https://api.asaas.com/api/v3'
 )
 
-from decouple import config
-
-ASAAS_WEBHOOK_TOKEN = config('ASAAS_WEBHOOK_TOKEN', default='')
+ASAAS_WEBHOOK_TOKEN = os.getenv('ASAAS_WEBHOOK_TOKEN', '')
 
 # Email
 EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
@@ -149,3 +160,36 @@ DEFAULT_FROM_EMAIL  = os.getenv('DEFAULT_FROM_EMAIL', 'BookHub <noreply@innobook
 # Em desenvolvimento, mostra emails no terminal
 if DEBUG:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# URL pública do site (usada nos e-mails)
+SITE_URL = os.getenv('SITE_URL', 'http://127.0.0.1:8000')
+
+# Logging (webhook do Asaas)
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{asctime}] {levelname} {name} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'webhook_file': {
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'webhook.log',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'apps.payments.views': {
+            'handlers': ['console', 'webhook_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}

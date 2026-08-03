@@ -1,0 +1,17 @@
+Dados que você precisará para o financeiro SaaS (Asaas real)
+Hoje está tudo em .env (apps/payments/asaas.py:6-15 + settings.py:127-138):
+
+Dado	               Valor atual	                Necessário em produção
+ASAAS_API_KEY	      $aact_hmlg_... (sandbox)	Chave produção da nova conta (prefixo $aact_ sem hmlg)
+ASAAS_ENV	      sandbox	                        production
+ASAAS_WEBHOOK_TOKEN	—	                Token do webhook se você habilitar "enviar token" no painel Asaas
+
+Fora do código, na nova conta Asaas você precisa:
+Conta aprovada como pessoa jurídica (CNPJ) com documentação (é obrigatório p/ marketplace).
+Habilitar Split de Pagamento / Marketplace no Asaas — é o que permite o dinheiro cair automaticamente na chave PIX de cada escritor, sem você intermediar manualmente. Hoje o sistema não usa split: tudo cai na sua conta e o saque ao escritor é manual. Para muitos vendedores, split é o caminho.
+Configurar no painel Asaas o webhook apontando para https://seu-dominio/payments/webhook/asaas/ com os eventos PAYMENT_CONFIRMED, PAYMENT_RECEIVED, PAYMENT_REFUNDED, PAYMENT_OVERDUE, PAYMENT_DELETED.
+Chave PIX da conta (para você receber do Asaas), dados do titular, e para cada escritor: chave PIX + CPF/CNPJ (o modelo ProducerBankData já guarda a chave PIX, mas falta CPF/CNPJ completo e conta para o split).
+
+
+
+

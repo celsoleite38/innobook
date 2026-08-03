@@ -8,7 +8,7 @@ from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from django.conf import settings
 from apps.products.models import Ebook
-from apps.delivery.utils import create_download_token
+from apps.delivery.utils import create_download_token, get_client_ip
 from .models import Order, Payment, WithdrawRequest
 from .asaas import create_charge, get_charge, get_pix_qrcode
 from .emails import send_purchase_confirmation, send_new_sale_notification
@@ -47,23 +47,9 @@ def checkout_view(request, ebook_id):
         )
 
         try:
-            # Dados do cartão se necessário
-            card_data = None
-            if billing_type == 'CREDIT_CARD':
-                card_data = {
-                    'holder_name'   : request.POST.get('holder_name'),
-                    'number'        : request.POST.get('card_number', '').replace(' ', ''),
-                    'expiry_month'  : request.POST.get('expiry_month'),
-                    'expiry_year'   : request.POST.get('expiry_year'),
-                    'ccv'           : request.POST.get('ccv'),
-                    'cpf'           : request.POST.get('cpf', ''),
-                    'postal_code'   : request.POST.get('postal_code', ''),
-                    'address_number': request.POST.get('address_number', ''),
-                    'phone'         : request.POST.get('phone', ''),
-                }
-
-            # Cria cobrança no Asaas
-            charge = create_charge(order, billing_type, card_data)
+            # Cria cobrança no Asaas (SEM dados de cartão — cartão vai para o
+            # checkout hospedado do Asaas via invoiceUrl)
+            charge = create_charge(order, billing_type, ip=get_client_ip(request))
 
             # Salva ID da cobrança
             order.gateway_order_id = charge['id']
@@ -77,10 +63,14 @@ def checkout_view(request, ebook_id):
                 raw_response = charge,
             )
 
-            # Cartão aprovado na hora
-            if billing_type == 'CREDIT_CARD' and charge.get('status') == 'CONFIRMED':
-                _confirm_order(order, charge['id'])
-                return redirect('payments:success', order_id=order.order_id)
+            # Cartão — checkout seguro do Asaas (o cliente paga na página deles)
+            if billing_type == 'CREDIT_CARD':
+                return render(request, 'payments/card.html', {
+                    'order'      : order,
+                    'charge'     : charge,
+                    'invoice_url': charge.get('invoiceUrl', ''),
+                    'charge_id'  : charge['id'],
+                })
 
             # PIX — mostra QR code
             if billing_type == 'PIX':
@@ -117,23 +107,33 @@ def checkout_view(request, ebook_id):
 
 @login_required
 def check_pix_view(request, charge_id):
-    """Verifica se o PIX foi pago (polling do frontend)."""
+    """Verifica se o pagamento foi efetuado (polling do frontend)."""
+    orders = Order.objects.filter(
+        gateway_order_id=charge_id,
+        buyer=request.user
+    )
+
+    if not orders.exists():
+        return JsonResponse({'paid': False, 'status': 'not_found'})
+
+    # Já confirmado?
+    if orders.filter(status=Order.STATUS_PAID).exists():
+        return JsonResponse({'paid': True, 'order_id': str(orders.first().order_id)})
+
+    # Consulta o status REAL na API do Asaas (não confia no cliente)
     try:
         charge = get_charge(charge_id)
-        status = charge.get('status', '')
-
-        if status in ('CONFIRMED', 'RECEIVED'):
-            order = Order.objects.filter(
-                gateway_order_id=charge_id,
-                buyer=request.user
-            ).first()
-            if order and order.status != Order.STATUS_PAID:
-                _confirm_order(order, charge_id)
-            return JsonResponse({'paid': True, 'order_id': str(order.order_id)})
-
-        return JsonResponse({'paid': False, 'status': status})
     except Exception as e:
         return JsonResponse({'paid': False, 'error': str(e)})
+
+    if charge.get('status') in ('CONFIRMED', 'RECEIVED'):
+        # Confirma TODOS os pedidos vinculados a esta cobrança (carrinho)
+        for order in orders:
+            if order.status != Order.STATUS_PAID:
+                _confirm_order(order, charge_id)
+        return JsonResponse({'paid': True, 'order_id': str(orders.first().order_id)})
+
+    return JsonResponse({'paid': False, 'status': charge.get('status')})
 
 
 # ── Success ────────────────────────────────────────────────
@@ -181,17 +181,22 @@ logger = logging.getLogger(__name__)
 @csrf_exempt
 @require_POST
 def asaas_webhook(request):
-    # 1. Valida token do Asaas - 401 não pausa fila
-    #asaas_token = request.headers.get('asaas-access-token')
-    #if asaas_token != getattr(settings, 'ASAAS_WEBHOOK_TOKEN', None):
-    #    logger.warning(f"Webhook com token inválido: {asaas_token}")
-    #    return HttpResponse(status=401)
+    # 1. Exige token configurado
+    if not settings.ASAAS_WEBHOOK_TOKEN:
+        logger.error("ASAAS_WEBHOOK_TOKEN não configurado. Webhook rejeitado.")
+        return HttpResponse(status=503)
+
+    # 2. Valida o token enviado pelo Asaas no header
+    asaas_token = request.headers.get('asaas-access-token')
+    if asaas_token != settings.ASAAS_WEBHOOK_TOKEN:
+        logger.warning(f"Webhook com token inválido: {asaas_token}")
+        return HttpResponse(status=401)
 
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:
         logger.error("Webhook Asaas com JSON inválido")
-        return HttpResponse(status=400) # 400 também não pausa
+        return HttpResponse(status=400)
 
     event = data.get('event', '')
     payment = data.get('payment', {})
@@ -200,40 +205,59 @@ def asaas_webhook(request):
         return JsonResponse({"status": "ignored"}, status=200)
 
     charge_id = payment.get('id')
-    external_reference = payment.get('externalReference')
 
-    if not external_reference:
-        logger.info(f"Webhook sem externalReference: {charge_id}")
-        return JsonResponse({"status": "ignored"}, status=200)
+    # Localiza TODOS os pedidos vinculados a esta cobrança
+    # (carrinho compartilha o mesmo gateway_order_id)
+    orders = Order.objects.filter(gateway_order_id=charge_id)
 
-    try:
-        order = Order.objects.get(order_id=external_reference)
-    except Order.DoesNotExist:
-        logger.error(f"Pedido não encontrado no webhook: {external_reference}")
+    if not orders.exists():
+        external_reference = payment.get('externalReference')
+        if external_reference:
+            orders = Order.objects.filter(order_id=external_reference)
+
+    if not orders.exists():
+        logger.error(f"Pedido não encontrado no webhook: {charge_id}")
         return JsonResponse({"status": "order_not_found"}, status=200)
 
-    # 2. Idempotência - se já tá pago, só retorna 200
-    if order.status == Order.STATUS_PAID:
-        logger.info(f"Pedido {order.order_id} já pago. Ignorando webhook duplicado.")
+    # 3. Idempotência - se já está pago, só retorna 200
+    if orders.filter(status=Order.STATUS_PAID).exists() and not orders.exclude(status=Order.STATUS_PAID).exists():
+        logger.info(f"Cobrança {charge_id} já paga. Ignorando webhook duplicado.")
         return JsonResponse({"status": "already_paid"}, status=200)
 
-    # 3. Processa eventos
+    # 4. Processa eventos
     if event in ('PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED'):
-        _confirm_order(order, charge_id)
-        logger.info(f"Pedido {order.order_id} confirmado via webhook")
+        # Só confirma se a API do Asaas realmente confirmar (não confia no body)
+        try:
+            charge = get_charge(charge_id)
+        except Exception as e:
+            logger.error(f"Erro ao consultar cobrança na API: {e}")
+            return JsonResponse({"status": "verify_failed"}, status=200)
+
+        if charge.get('status') not in ('CONFIRMED', 'RECEIVED'):
+            logger.warning(
+                f"Webhook diz pago mas a API retornou {charge.get('status')}. Ignorando."
+            )
+            return JsonResponse({"status": "not_confirmed_by_api"}, status=200)
+
+        for order in orders:
+            if order.status != Order.STATUS_PAID:
+                _confirm_order(order, charge_id)
+        logger.info(f"Cobrança {charge_id} confirmada via webhook")
 
     elif event == 'PAYMENT_REFUNDED':
-        order.status = Order.STATUS_REFUNDED
-        order.save()
-        order.download_tokens.update(is_active=False)
-        logger.info(f"Pedido {order.order_id} estornado")
+        for order in orders:
+            order.status = Order.STATUS_REFUNDED
+            order.save()
+            order.download_tokens.update(is_active=False)
+        logger.info(f"Cobrança {charge_id} estornada")
 
     elif event in ('PAYMENT_DELETED', 'PAYMENT_OVERDUE'):
-        order.status = Order.STATUS_CANCELLED
-        order.save()
-        logger.info(f"Pedido {order.order_id} cancelado/vencido")
+        for order in orders:
+            order.status = Order.STATUS_CANCELLED
+            order.save()
+        logger.info(f"Cobrança {charge_id} cancelada/vencida")
 
-    # 4. Sempre retorna 200 pro Asaas não pausar
+    # 5. Sempre retorna 200 pro Asaas não pausar
     return JsonResponse({"status": "received"}, status=200)
 
 
@@ -308,20 +332,7 @@ def cart_checkout_view(request):
             order_ref.amount = total
             order_ref.save()
 
-            card_data = None
-            if billing_type == 'CREDIT_CARD':
-                card_data = {
-                    'holder_name'   : request.POST.get('holder_name'),
-                    'number'        : request.POST.get('card_number', '').replace(' ', ''),
-                    'expiry_month'  : request.POST.get('expiry_month'),
-                    'expiry_year'   : request.POST.get('expiry_year'),
-                    'ccv'           : request.POST.get('ccv'),
-                    'cpf'           : request.POST.get('cpf', ''),
-                    'postal_code'   : request.POST.get('postal_code', ''),
-                    'address_number': request.POST.get('address_number', ''),
-                }
-
-            charge = create_charge(order_ref, billing_type, card_data)
+            charge = create_charge(order_ref, billing_type, ip=get_client_ip(request))
             order_ref.gateway_order_id = charge['id']
             order_ref.save()
 
@@ -340,10 +351,14 @@ def cart_checkout_view(request):
             # Limpa o carrinho
             cart.items.all().delete()
 
-            if billing_type == 'CREDIT_CARD' and charge.get('status') == 'CONFIRMED':
-                for order in orders_criados:
-                    _confirm_order(order, charge['id'])
-                return redirect('payments:success', order_id=order_ref.order_id)
+            # Cartão — checkout seguro do Asaas
+            if billing_type == 'CREDIT_CARD':
+                return render(request, 'payments/card.html', {
+                    'order'      : order_ref,
+                    'charge'     : charge,
+                    'invoice_url': charge.get('invoiceUrl', ''),
+                    'charge_id'  : charge['id'],
+                })
 
             if billing_type == 'PIX':
                 pix = get_pix_qrcode(charge['id'])

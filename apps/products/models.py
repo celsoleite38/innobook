@@ -2,6 +2,10 @@ from django.db import models
 from django.conf import settings
 from django.utils.text import slugify
 
+from core.storages import ProtectedFileSystemStorage
+
+protected_storage = ProtectedFileSystemStorage()
+
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
@@ -57,21 +61,24 @@ class Ebook(models.Model):
     description = models.TextField(verbose_name='Descrição')
     cover       = models.ImageField(upload_to='covers/', verbose_name='Capa')
 
-    # Arquivo protegido (PDF real — nunca público!)
+    # Arquivo protegido (PDF real — nunca público! fica fora do MEDIA_ROOT)
     file        = models.FileField(
-        upload_to='protected/ebooks/',
+        storage=protected_storage,
+        upload_to='ebooks/',
         verbose_name='Arquivo PDF'
     )
 
     # EPUB (opcional)
     file_epub       = models.FileField(
-        upload_to='protected/ebooks/epub/',
+        storage=protected_storage,
+        upload_to='ebooks/epub/',
         blank=True, null=True,
         verbose_name='Arquivo EPUB'
     )
     # MOBI/Kindle (opcional)
     file_mobi       = models.FileField(
-        upload_to='protected/ebooks/mobi/',
+        storage=protected_storage,
+        upload_to='ebooks/mobi/',
         blank=True, null=True,
         verbose_name='Arquivo MOBI (Kindle)'
     )
@@ -161,19 +168,22 @@ class EbookBonus(models.Model):
         verbose_name='Capa do bônus'
     )
 
-    # Arquivos do bônus
+    # Arquivos do bônus (protegidos — fora do MEDIA_ROOT)
     file        = models.FileField(
-        upload_to='protected/bonus/',
+        storage=protected_storage,
+        upload_to='bonus/',
         verbose_name='Arquivo PDF',
         blank=True, null=True,
     )
     file_epub   = models.FileField(
-        upload_to='protected/bonus/epub/',
+        storage=protected_storage,
+        upload_to='bonus/epub/',
         blank=True, null=True,
         verbose_name='Arquivo EPUB'
     )
     file_mobi   = models.FileField(
-        upload_to='protected/bonus/mobi/',
+        storage=protected_storage,
+        upload_to='bonus/mobi/',
         blank=True, null=True,
         verbose_name='Arquivo MOBI (Kindle)'
     )

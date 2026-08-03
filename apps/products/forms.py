@@ -1,5 +1,6 @@
 from django import forms
 from .models import Ebook, EbookBonus
+from .validators import validar_ebook, validar_imagem
 
 
 class EbookForm(forms.ModelForm):
@@ -26,6 +27,32 @@ class EbookForm(forms.ModelForm):
             'language'      : forms.TextInput(attrs={'class': 'form-control'}),
         }
 
+    def clean_file(self):
+        arquivo = self.cleaned_data.get('file')
+        validar_ebook(arquivo)
+        return arquivo
+
+    def clean_file_epub(self):
+        arquivo = self.cleaned_data.get('file_epub')
+        validar_ebook(arquivo)
+        return arquivo
+
+    def clean_file_mobi(self):
+        arquivo = self.cleaned_data.get('file_mobi')
+        validar_ebook(arquivo)
+        return arquivo
+
+    def clean_cover(self):
+        arquivo = self.cleaned_data.get('cover')
+        validar_imagem(arquivo)
+        return arquivo
+
+    def clean_preview(self):
+        arquivo = self.cleaned_data.get('preview')
+        validar_imagem(arquivo)
+        return arquivo
+
+
 class EbookBonusForm(forms.ModelForm):
     class Meta:
         model  = EbookBonus
@@ -39,3 +66,23 @@ class EbookBonusForm(forms.ModelForm):
             'file_mobi'  : forms.FileInput(attrs={'class': 'form-control'}),
             'order'      : forms.NumberInput(attrs={'class': 'form-control'}),
         }
+
+    def clean_file(self):
+        arquivo = self.cleaned_data.get('file')
+        validar_ebook(arquivo)
+        return arquivo
+
+    def clean_file_epub(self):
+        arquivo = self.cleaned_data.get('file_epub')
+        validar_ebook(arquivo)
+        return arquivo
+
+    def clean_file_mobi(self):
+        arquivo = self.cleaned_data.get('file_mobi')
+        validar_ebook(arquivo)
+        return arquivo
+
+    def clean_cover(self):
+        arquivo = self.cleaned_data.get('cover')
+        validar_imagem(arquivo)
+        return arquivo

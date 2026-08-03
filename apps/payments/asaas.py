@@ -3,6 +3,11 @@ from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
 
+
+def _is_sandbox():
+    return 'sandbox' in settings.ASAAS_URL
+
+
 def _headers():
     if not settings.ASAAS_API_KEY:
         raise Exception('ASAAS_API_KEY não configurada no.env')
@@ -11,16 +16,24 @@ def _headers():
         'Content-Type': 'application/json',
     }
 
+
 def _url(path):
     return f'{settings.ASAAS_URL}{path}'
 
-def get_or_create_customer(user):
-    # Pega CPF do perfil. Se não tiver, usa um fake pra sandbox
-    cpf = getattr(user, 'cpf', '') or '00000000000'
-    cpf_limpo = ''.join(filter(str.isdigit, cpf))
 
-    if cpf_limpo == '00000000000' and 'sandbox' not in settings.ASAAS_URL:
-        raise Exception('CPF é obrigatório. Preencha no perfil.')
+def get_or_create_customer(user):
+    # CPF do perfil; em sandbox permite CPF fictício
+    cpf_limpo = ''.join(filter(str.isdigit, getattr(user, 'cpf', '') or ''))
+
+    if not cpf_limpo or cpf_limpo == '00000000000':
+        if not _is_sandbox():
+            raise Exception('CPF é obrigatório. Preencha no perfil.')
+        cpf_limpo = '00000000000'
+
+    if not _is_sandbox() and cpf_limpo != '00000000000':
+        from apps.accounts.validators import cpf_valido
+        if not cpf_valido(cpf_limpo):
+            raise Exception('CPF inválido. Verifique o CPF no seu perfil.')
 
     # Busca cliente existente
     response = requests.get(
@@ -35,8 +48,8 @@ def get_or_create_customer(user):
         customer_id = customer['id']
 
         # CPF vazio no Asaas → atualiza com PUT
-        if not customer.get('cpfCnpj') and cpf_limpo!= '00000000000':
-            put_resp = requests.put( # PUT não POST
+        if not customer.get('cpfCnpj') and cpf_limpo != '00000000000':
+            put_resp = requests.put(
                 _url(f'/customers/{customer_id}'),
                 headers=_headers(),
                 json={
@@ -45,7 +58,7 @@ def get_or_create_customer(user):
                     'cpfCnpj': cpf_limpo,
                 }
             )
-            if put_resp.status_code!= 200:
+            if put_resp.status_code != 200:
                 print(f'Erro ao atualizar CPF: {put_resp.text}')
 
         return customer_id
@@ -65,7 +78,13 @@ def get_or_create_customer(user):
 
     return customer['id']
 
-def create_charge(order, billing_type, card_data=None):
+
+def create_charge(order, billing_type, ip=None):
+    """
+    Cria a cobrança no Asaas. NUNCA recebe dados de cartão aqui — para cartão
+    de crédito o Asaas devolve `invoiceUrl` (checkout hospedado) e o cliente
+    paga na página segura do Asaas.
+    """
     customer_id = get_or_create_customer(order.buyer)
 
     payload = {
@@ -78,22 +97,8 @@ def create_charge(order, billing_type, card_data=None):
         'postalService': False,
     }
 
-    if billing_type == 'CREDIT_CARD' and card_data:
-        payload['creditCard'] = {
-            'holderName': card_data.get('holder_name'),
-            'number': card_data.get('number'),
-            'expiryMonth': card_data.get('expiry_month'),
-            'expiryYear': card_data.get('expiry_year'),
-            'ccv': card_data.get('ccv'),
-        }
-        payload['creditCardHolderInfo'] = {
-            'name': order.buyer_name,
-            'email': order.buyer_email,
-            'cpfCnpj': card_data.get('cpf', ''),
-            'postalCode': card_data.get('postal_code', ''),
-            'addressNumber': card_data.get('address_number', ''),
-            'phone': card_data.get('phone', ''),
-        }
+    if ip:
+        payload['remoteIp'] = ip
 
     response = requests.post(_url('/payments'), headers=_headers(), json=payload)
     charge = response.json()
@@ -103,18 +108,21 @@ def create_charge(order, billing_type, card_data=None):
 
     return charge
 
+
 def get_charge(charge_id):
     response = requests.get(_url(f'/payments/{charge_id}'), headers=_headers())
     return response.json()
+
 
 def get_pix_qrcode(charge_id):
     response = requests.get(_url(f'/payments/{charge_id}/pixQrCode'), headers=_headers())
     return response.json()
 
+
 def _due_date(billing_type):
     agora_local = timezone.localtime()
     if billing_type == 'BOLETO':
         due = agora_local + timedelta(days=3)
-    else: # PIX e CREDIT_CARD
-        due = agora_local + timedelta(hours=25) # Garante que é amanhã
+    else:  # PIX e CREDIT_CARD
+        due = agora_local + timedelta(hours=25)  # Garante que é amanhã
     return due.strftime('%Y-%m-%d')

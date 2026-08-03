@@ -11,13 +11,52 @@
         </p>
         <h1 style="font-family:'Playfair Display',serif; color:#f5f0e8;
                    font-size:28px; font-weight:600; margin:0;">
-            Olá, {{ user.first_name|default:user.username }}
+            Olá, {{ user.first_name }} {{ user.last_name }}
         </h1>
     </div>
 </section>
 
 <section class="py-5 bg-cream">
     <div class="container">
+
+        {% if not user.email_verified %}
+        <div class="alert alert-warning d-flex align-items-center" style="font-size:13px; margin-bottom:2rem;">
+            <div>
+                <strong>E-mail não verificado.</strong> Confirme seu e-mail para comprar
+                e solicitar acesso de escritor.
+                <a href="{% url 'accounts:resend_verification' %}" class="ms-1">Reenviar e-mail</a>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if user.producer_requested and not user.producer_approved %}
+        <div class="alert alert-info d-flex align-items-center" style="font-size:13px; margin-bottom:2rem;">
+            <div>
+                <strong>Solicitação de escritor enviada.</strong> Nossa equipe vai analisar
+                e aprovar seu acesso em breve.
+            </div>
+        </div>
+        {% endif %}
+
+        {% if user.role == 'buyer' and user.email_verified and not user.producer_requested %}
+        <div style="background:#fff; border:0.5px solid #e0d8cc; border-radius:6px;
+                    padding:1.2rem 1.5rem; display:flex; align-items:center; gap:16px;
+                    flex-wrap:wrap; margin-bottom:2rem;">
+            <div class="flex-grow-1">
+                <p style="font-family:'Playfair Display',serif; font-size:15px;
+                           font-weight:600; color:#1a1a2e; margin-bottom:3px;">
+                    Quer publicar seus eBooks?
+                </p>
+                <p style="font-size:12px; color:#888; margin:0;">
+                    Torne-se escritor e venda suas obras na plataforma.
+                </p>
+            </div>
+            <a href="{% url 'accounts:request_producer' %}" class="btn-gold"
+               style="padding:9px 22px; font-size:11px;">
+                Solicitar acesso de escritor
+            </a>
+        </div>
+        {% endif %}
 
         <!-- Cards de resumo -->
         <div class="row g-3 mb-5">

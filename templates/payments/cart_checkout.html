@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Checkout — Inno Book{% endblock %}
+{% block title %}Checkout — Editora Orange{% endblock %}
 
 {% block content %}
 
@@ -116,61 +116,13 @@
                             </div>
                         </div>
 
-                        <!-- Campos do cartão -->
-                        <div id="card-fields" style="display:none; margin-bottom:1rem;">
-                            <div style="border-top:0.5px solid #e0d8cc; padding-top:1rem;
-                                        margin-bottom:1rem;">
-                                <p style="font-size:11px; letter-spacing:1px;
-                                           text-transform:uppercase; color:#c9a84c;
-                                           margin-bottom:12px;">
-                                    Dados do cartão
-                                </p>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Nome no cartão</label>
-                                <input type="text" name="holder_name" class="form-control"
-                                       placeholder="Como está no cartão">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Número do cartão</label>
-                                <input type="text" name="card_number" class="form-control"
-                                       placeholder="0000 0000 0000 0000" maxlength="19">
-                            </div>
-                            <div class="row g-2 mb-3">
-                                <div class="col-4">
-                                    <label class="form-label">Mês</label>
-                                    <input type="text" name="expiry_month"
-                                           class="form-control" placeholder="MM" maxlength="2">
-                                </div>
-                                <div class="col-4">
-                                    <label class="form-label">Ano</label>
-                                    <input type="text" name="expiry_year"
-                                           class="form-control" placeholder="AAAA" maxlength="4">
-                                </div>
-                                <div class="col-4">
-                                    <label class="form-label">CVV</label>
-                                    <input type="text" name="ccv"
-                                           class="form-control" placeholder="000" maxlength="4">
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">CPF do titular</label>
-                                <input type="text" name="cpf" class="form-control"
-                                       placeholder="000.000.000-00"
-                                       value="{{ request.user.cpf }}">
-                            </div>
-                            <div class="row g-2 mb-3">
-                                <div class="col-7">
-                                    <label class="form-label">CEP</label>
-                                    <input type="text" name="postal_code"
-                                           class="form-control" placeholder="00000-000">
-                                </div>
-                                <div class="col-5">
-                                    <label class="form-label">Número</label>
-                                    <input type="text" name="address_number"
-                                           class="form-control" placeholder="123">
-                                </div>
-                            </div>
+                        <div class="mb-4"
+                             style="border:0.5px solid #e0d8cc; background:#fdf8ee;
+                                    border-radius:4px; padding:12px 16px;
+                                    font-size:12px; color:#555; line-height:1.6;">
+                            <i class="bi bi-shield-lock me-1 text-gold"></i>
+                            Pagamento em ambiente seguro do Asaas.
+                            Nenhum dado do seu cartão passa pelo nosso servidor.
                         </div>
 
                         <button type="submit" class="btn-gold w-100"
@@ -202,11 +154,9 @@
 {% block extra_js %}
 <script>
 const billingInputs = document.querySelectorAll('input[name="billing_type"]');
-const cardFields    = document.getElementById('card-fields');
 
 billingInputs.forEach(input => {
     input.addEventListener('change', function() {
-        cardFields.style.display = this.value === 'CREDIT_CARD' ? 'block' : 'none';
         document.querySelectorAll('input[name="billing_type"] + label').forEach(l => {
             l.style.borderColor = '#e0d8cc';
             l.style.background  = '#fff';

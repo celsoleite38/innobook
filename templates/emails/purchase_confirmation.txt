@@ -9,6 +9,6 @@ Valor   : R$ {{ order.amount }}
 Pedido  : #{{ order.order_id }}
 
 Acesse seu dashboard para baixar o eBook:
-http://127.0.0.1:8000/accounts/dashboard/
+{{ site_url }}/accounts/dashboard/
 
 Obrigado por comprar na BookHub!

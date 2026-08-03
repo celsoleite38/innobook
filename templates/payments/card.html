@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block title %}Pagamento com Cartão — Editora Orange{% endblock %}
+
+{% block content %}
+<section style="background:#1a1a2e; padding:32px 0;">
+    <div class="container">
+        <p style="color:#c9a84c; font-size:11px; letter-spacing:3px;
+                  text-transform:uppercase; margin-bottom:8px;">
+            Finalizar pagamento
+        </p>
+        <h1 style="font-family:'Playfair Display',serif; color:#f5f0e8;
+                   font-size:28px; font-weight:600; margin:0;">
+            Pagamento com cartão
+        </h1>
+    </div>
+</section>
+
+<section class="py-5 bg-cream">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:2rem; text-align:center;">
+
+                    <div style="width:64px; height:64px; background:#1a1a2e;
+                                border-radius:50%; display:flex; align-items:center;
+                                justify-content:center; margin:0 auto 1rem;">
+                        <i class="bi bi-credit-card text-gold" style="font-size:28px;"></i>
+                    </div>
+                    <p style="color:#c9a84c; font-size:11px; letter-spacing:2px;
+                              text-transform:uppercase; margin-bottom:6px;">
+                        Ambiente seguro
+                    </p>
+                    <h4 style="font-family:'Playfair Display',serif; color:#1a1a2e;
+                               font-size:20px; margin-bottom:4px;">
+                        R$ {{ order.amount }}
+                    </h4>
+                    <p style="font-size:13px; color:#888; margin-bottom:1.5rem;">
+                        {{ order.ebook.title }}
+                    </p>
+
+                    {% if invoice_url %}
+                    <p style="font-size:13px; color:#555; line-height:1.7; margin-bottom:1.5rem;">
+                        Você será direcionado ao ambiente seguro de pagamento do Asaas.
+                        Nenhum dado de cartão é armazenado no nosso servidor.
+                    </p>
+                    <a href="{{ invoice_url }}" id="pay-btn"
+                       class="btn-gold d-block mb-3"
+                       style="padding:14px; font-size:12px;">
+                        <i class="bi bi-shield-lock me-2"></i>Pagar agora no Asaas
+                    </a>
+                    {% else %}
+                    <p style="font-size:13px; color:#8b2020; margin-bottom:1.5rem;">
+                        Não foi possível gerar o link de pagamento. Acompanhe seus
+                        pedidos pelo dashboard.
+                    </p>
+                    {% endif %}
+
+                    <div id="checking"
+                         style="font-size:13px; color:#888; margin-bottom:1rem;">
+                        <i class="bi bi-arrow-repeat me-2"
+                           style="animation:spin 1s linear infinite; display:inline-block;">
+                        </i>
+                        Verificando pagamento automaticamente...
+                    </div>
+
+                    <p style="font-size:11px; color:#aaa;">
+                        Após pagar, você voltará ao site com o download liberado.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% block extra_js %}
+<style>
+    @keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+</style>
+<script>
+const chargeId = '{{ charge_id }}';
+const checkUrl = '/payments/pix/check/' + chargeId + '/';
+let attempts   = 0;
+const maxChecks = 240;
+
+async function checkPayment() {
+    if (attempts >= maxChecks) {
+        document.getElementById('checking').innerHTML =
+            '<i class="bi bi-clock me-2"></i>Tempo esgotado. <a href="/accounts/dashboard/">Ver dashboard</a>';
+        return;
+    }
+    attempts++;
+    try {
+        const res  = await fetch(checkUrl);
+        const data = await res.json();
+        if (data.paid) {
+            document.getElementById('checking').innerHTML =
+                '<i class="bi bi-check-circle me-2" style="color:#2d5a2d;"></i>' +
+                '<strong style="color:#2d5a2d;">Pagamento confirmado!</strong> Redirecionando...';
+            setTimeout(() => {
+                window.location.href = '/payments/success/' + data.order_id + '/';
+            }, 1500);
+            return;
+        }
+    } catch(e) {
+        console.log(e);
+    }
+    setTimeout(checkPayment, 5000);
+}
+
+checkPayment();
+</script>
+{% endblock %}
+
+{% endblock %}

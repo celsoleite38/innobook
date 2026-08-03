@@ -12,6 +12,7 @@ def send_purchase_confirmation(order, token):
     context = {
         'order': order,
         'token': token,
+        'site_url': settings.SITE_URL,
     }
 
     html_message = render_to_string('emails/purchase_confirmation.html', context)
@@ -33,7 +34,7 @@ def send_new_sale_notification(order):
     """
     subject = f'🎉 Nova venda — {order.ebook.title}'
 
-    context = {'order': order}
+    context = {'order': order, 'site_url': settings.SITE_URL}
 
     html_message  = render_to_string('emails/new_sale.html', context)
     plain_message = render_to_string('emails/new_sale.txt', context)
@@ -51,7 +52,7 @@ def send_pending_order_reminder(order):
     """Lembra o cliente de um pedido não pago."""
     subject = f'⏳ Você tem um pedido pendente — {order.ebook.title}'
 
-    context = {'order': order}
+    context = {'order': order, 'site_url': settings.SITE_URL}
 
     html_message  = render_to_string('emails/pending_order.html', context)
     plain_message = render_to_string('emails/pending_order.txt', context)

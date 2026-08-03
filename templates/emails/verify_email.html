@@ -13,39 +13,24 @@
                font-weight: bold; margin: 20px 0; }
         .footer { background: #f4f4f4; padding: 20px; text-align: center;
                   color: #999; font-size: 12px; }
-        .product-box { background: #f8f9fa; border-radius: 8px; padding: 16px; margin: 20px 0; }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
         <h1>Editora Orange</h1>
-        <p style="color:#fff; margin:8px 0 0;">Compra confirmada!</p>
+        <p style="color:#fff; margin:8px 0 0;">Confirme seu e-mail</p>
     </div>
     <div class="body">
-        <h2>Olá, {{ order.buyer_name }}! 👋</h2>
-        <p>Sua compra foi confirmada com sucesso. Seu eBook está pronto para download!</p>
-
-        <div class="product-box">
-            <strong>{{ order.ebook.title }}</strong><br>
-            <small style="color:#666;">
-                Autor: {{ order.ebook.author.get_full_name }}<br>
-                Valor: R$ {{ order.amount }}<br>
-                Pedido: #{{ order.order_id }}
-            </small>
-        </div>
-
-        <p>Clique no botão abaixo para baixar seu eBook:</p>
+        <h2>Olá, {{ user.first_name|default:user.username }}!</h2>
+        <p>Para liberar o acesso de escritor e garantir a segurança da sua conta, confirme seu e-mail clicando no botão abaixo:</p>
 
         <div style="text-align:center;">
-            <a href="{{ site_url }}{% url 'delivery:download' token.token %}"
-               class="btn">
-                ⬇️ Baixar eBook agora
-            </a>
+            <a href="{{ url }}" class="btn">✅ Confirmar e-mail</a>
         </div>
 
         <p style="color:#999; font-size:13px;">
-            ⚠️ Este link é válido por 365 dias e permite até {{ token.max_downloads }} downloads.
+            Se você não criou uma conta na Editora Orange, ignore este e-mail.
         </p>
     </div>
     <div class="footer">

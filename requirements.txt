@@ -5,6 +5,8 @@ Django==6.0.5
 idna==3.16
 mercadopago==3.1.1
 pillow==12.2.0
+psycopg2-binary==2.9.12
+python-decouple==3.8
 python-dotenv==1.2.2
 requests==2.34.2
 sqlparse==0.5.5

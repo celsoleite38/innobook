@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Entrar — Editora Orange{% endblock %}
+{% block title %}Verificação em duas etapas — Editora Orange{% endblock %}
 
 {% block content %}
 <section class="bg-cream" style="min-height:90vh; display:flex; align-items:center; padding:3rem 0;">
@@ -10,11 +10,11 @@
                 <div class="text-center mb-4">
                     <p style="font-family:'Playfair Display',serif; color:#1a1a2e;
                                font-size:28px; font-weight:600; margin-bottom:4px;">
-                        Bem-vindo
+                        Verificação em duas etapas
                     </p>
                     <div style="width:40px; height:2px; background:#c9a84c; margin:0 auto 8px;"></div>
                     <p style="font-size:13px; color:#888;">
-                        Acesse sua conta
+                        Enviamos um código de 6 dígitos para o seu e-mail
                     </p>
                 </div>
 
@@ -22,43 +22,27 @@
                             border-radius:6px; padding:2rem;">
                     <form method="post">
                         {% csrf_token %}
-                        <div class="mb-3">
-                            <label class="form-label">Email</label>
-                            {{ form.email }}
-                            {% if form.email.errors %}
-                            <div style="font-size:12px; color:#8b2020; margin-top:4px;">
-                                {{ form.email.errors }}
-                            </div>
-                            {% endif %}
-                        </div>
+                        <input type="hidden" name="next" value="{{ next_url }}">
                         <div class="mb-4">
-                            <label class="form-label">Senha</label>
-                            {{ form.password }}
-                            {% if form.password.errors %}
-                            <div style="font-size:12px; color:#8b2020; margin-top:4px;">
-                                {{ form.password.errors }}
-                            </div>
-                            {% endif %}
-                            <div class="text-end mt-1">
-                                <a href="{% url 'accounts:password_reset' %}"
-                                   style="font-size:12px; color:#c9a84c; text-decoration:none;">
-                                    Esqueci minha senha
-                                </a>
-                            </div>
+                            <label class="form-label">Código de segurança</label>
+                            <input type="text" name="code" class="form-control text-center"
+                                   placeholder="000000" maxlength="6" autocomplete="one-time-code"
+                                   inputmode="numeric" autofocus
+                                   style="font-size:24px; letter-spacing:6px;">
                         </div>
                         <button type="submit" class="btn-gold w-100"
                                 style="padding:12px; font-size:12px; border-radius:3px;">
-                            Entrar
+                            Verificar
                         </button>
                     </form>
 
                     <div style="border-top:0.5px solid #e0d8cc; margin-top:1.5rem;
                                 padding-top:1.5rem; text-align:center;">
-                        <p style="font-size:13px; color:#888; margin:0;">
-                            Não tem conta?
-                            <a href="{% url 'accounts:register' %}"
+                        <p style="font-size:12px; color:#888; margin:0;">
+                            Não recebeu o código?
+                            <a href="{% url 'accounts:login' %}"
                                style="color:#c9a84c; text-decoration:none; font-weight:500;">
-                                Cadastre-se
+                                Faça login novamente
                             </a>
                         </p>
                     </div>
