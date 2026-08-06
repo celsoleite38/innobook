@@ -1,0 +1,48 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Helvetica, Arial, sans-serif; background: #f9f6f0; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 30px auto; background: #ffffff;
+                     border-radius: 8px; overflow: hidden; border: 1px solid #e0d8cc; }
+        .header { background: #1a1a2e; padding: 30px; text-align: center; }
+        .header img { height: 64px; border-radius: 14px; vertical-align: middle; }
+        .brand { font-family: Georgia, 'Times New Roman', serif; color: #c9a84c;
+                 font-size: 26px; font-weight: 700; margin: 10px 0 0; }
+        .header p { color: #c9a84c; margin: 6px 0 0; font-size: 14px; letter-spacing: 1px; }
+        .body { padding: 30px; color: #222; font-size: 14px; line-height: 1.6; }
+        .body h2 { font-family: Georgia, 'Times New Roman', serif; color: #1a1a2e;
+                   font-size: 20px; margin: 0 0 12px; }
+        .box { background: #f9f6f0; border: 1px solid #c9a84c; border-radius: 6px;
+               padding: 16px; margin: 18px 0; }
+        .btn { display: inline-block; background: #c9a84c; color: #1a1a2e !important;
+               padding: 13px 30px; border-radius: 3px; text-decoration: none;
+               font-size: 12px; font-weight: 600; letter-spacing: 1px;
+               text-transform: uppercase; margin: 20px 0; }
+        .muted { color: #888; font-size: 13px; }
+        .footer { background: #1a1a2e; padding: 22px; text-align: center; color: #888;
+                  font-size: 12px; }
+        .footer .brand { font-size: 18px; margin: 0 0 6px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <img src="https://loja.editoraorange.com.br/static/images/logoorange.png" alt="Logo Editora Orange">
+        <div class="brand">Editora Orange</div>
+        <p>{% block email_subtitle %}{% endblock %}</p>
+    </div>
+    <div class="body">
+        {% block email_body %}{% endblock %}
+    </div>
+    <div class="footer">
+        <div class="brand">Editora Orange</div>
+        © {% now "Y" %} Editora Orange — Todos os direitos reservados.<br>
+        Dúvidas? Entre em contato: suporte@editoraorange.com.br
+    </div>
+</div>
+</body>
+</html>

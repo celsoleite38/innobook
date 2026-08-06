@@ -1,4 +1,4 @@
-BookHub — Pedido pendente
+Editora Orange — Pedido pendente
 
 Olá, {{ order.buyer_name }}!
 

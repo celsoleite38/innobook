@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% block title %}Meus Envios — Editora Orange{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold">
+            <i class="bi bi-box-seam text-primary"></i> Meus Envios
+        </h2>
+        <div class="d-flex gap-2">
+            <a href="{% url 'accounts:producer' %}" class="btn-outline-gold"
+               style="padding:8px 18px; font-size:11px;">
+                <i class="bi bi-arrow-left me-1"></i>Painel do Escritor
+            </a>
+            <a href="{% url 'delivery:shipping_profile' %}" class="btn-gold"
+               style="padding:8px 18px; font-size:11px;">
+                <i class="bi bi-geo-alt me-1"></i>Endereço de remetente
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }}" role="alert">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Pagamento do frete / Conexão Melhor Envios -->
+    <div class="card mb-5"
+         style="border:0.5px solid #e0d8cc; border-radius:6px;">
+        <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h5 class="mb-1 fw-bold">
+                    <i class="bi bi-truck me-1 text-gold"></i> Melhor Envios
+                </h5>
+                {% if profile.uses_editora_account %}
+                <p class="text-muted mb-0" style="font-size:13px;">
+                    <span class="badge text-bg-primary">Pagamento pela Editora</span>
+                    <span class="ms-2">
+                        A Editora paga a postagem dos seus envios — você só
+                        precisa manter o endereço de remetente preenchido.
+                    </span>
+                </p>
+                {% elif profile.is_connected %}
+                <p class="text-muted mb-0" style="font-size:13px;">
+                    <span class="badge text-bg-success">Conectado</span>
+                    <span class="ms-2">CPF: {{ profile.document }}</span>
+                    <span class="ms-2">CEP origem: {{ profile.zipcode }}</span>
+                </p>
+                {% else %}
+                <p class="text-muted mb-0" style="font-size:13px;">
+                    <span class="badge text-bg-secondary">Não conectado</span>
+                    Conecte sua conta para gerar etiquetas de frete e vender livros físicos.
+                </p>
+                {% endif %}
+            </div>
+            <div>
+                {% if not profile.uses_editora_account %}
+                {% if profile.is_connected %}
+                <a href="{% url 'delivery:oauth_start' %}" class="btn-outline-gold"
+                   style="padding:8px 16px; font-size:11px;">
+                    <i class="bi bi-arrow-repeat me-1"></i>Reconectar
+                </a>
+                {% else %}
+                <a href="{% url 'delivery:oauth_start' %}" class="btn-gold"
+                   style="padding:10px 20px; font-size:12px;">
+                    <i class="bi bi-link-45deg me-1"></i>Conectar Melhor Envios
+                </a>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        {% if not profile.has_origin_address %}
+        <div class="card-footer text-warning-emphasis"
+             style="font-size:12px; background:#fdf8ee;">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            Você ainda não preencheu o endereço de remetente.
+            <a href="{% url 'delivery:shipping_profile' %}">Clique aqui para preencher</a>.
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Pacotes -->
+    <div class="card" style="border:0.5px solid #e0d8cc; border-radius:6px;">
+        <div class="card-header fw-bold">
+            <i class="bi bi-box-seam me-1"></i> Pacotes de envio
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Pacote</th>
+                        <th>Itens</th>
+                        <th>Transportadora</th>
+                        <th>Frete</th>
+                        <th>Rastreio</th>
+                        <th>Status</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for shipment in shipments %}
+                    <tr>
+                        <td>
+                            <strong>#{{ shipment.id }}</strong><br>
+                            <small class="text-muted">{{ shipment.created_at|date:"d/m/Y H:i" }}</small>
+                        </td>
+                        <td>
+                            {% for order in shipment.orders.all %}
+                            {{ order.ebook.title }}{% if not forloop.last %}<br>{% endif %}
+                            {% empty %}
+                            <small class="text-muted">—</small>
+                            {% endfor %}
+                        </td>
+                        <td>{{ shipment.carrier|default:"—" }}</td>
+                        <td>
+                            {% if shipment.freight_cost %}
+                            R$ {{ shipment.freight_cost|floatformat:2 }}
+                            {% else %}—{% endif %}
+                        </td>
+                        <td>
+                            {% if shipment.tracking_code %}
+                            {{ shipment.tracking_code }}
+                            {% else %}—{% endif %}
+                        </td>
+                        <td>
+                            {% if shipment.status == 'awaiting' %}
+                            <span class="badge text-bg-warning">Aguardando envio</span>
+                            {% elif shipment.status == 'ready' %}
+                            <span class="badge text-bg-primary">Etiqueta gerada</span>
+                            {% elif shipment.status == 'shipped' %}
+                            <span class="badge text-bg-info">Enviado</span>
+                            {% elif shipment.status == 'delivered' %}
+                            <span class="badge text-bg-success">Entregue</span>
+                            {% elif shipment.status == 'cancelled' %}
+                            <span class="badge text-bg-secondary">Cancelado</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            {% if shipment.status == 'awaiting' %}
+                                {% if shipment.orders.all %}
+                                <a href="{% url 'delivery:shipping_generate_label' shipment.pk %}"
+                                   class="btn-gold" style="padding:6px 12px; font-size:11px;">
+                                    Gerar etiqueta
+                                </a>
+                                {% endif %}
+                            {% elif shipment.status == 'ready' %}
+                                {% if shipment.print_url %}
+                                <a href="{{ shipment.print_url }}" target="_blank"
+                                   class="btn-gold" style="padding:6px 12px; font-size:11px;">
+                                    Imprimir etiqueta
+                                </a>
+                                {% endif %}
+                            {% endif %}
+                            {% if shipment.status == 'awaiting' or shipment.status == 'ready' %}
+                                <form method="post" action="{% url 'delivery:shipping_mark_shipped' shipment.pk %}"
+                                      class="d-inline" onsubmit="return confirm('Já postou o pacote na transportadora?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-navy"
+                                            style="padding:6px 12px; font-size:11px;">
+                                        Marcar enviado
+                                    </button>
+                                </form>
+                                <form method="post" action="{% url 'delivery:shipping_cancel' shipment.pk %}"
+                                      class="d-inline" onsubmit="return confirm('Cancelar este pacote e reembolsar o comprador?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-outline-gold"
+                                            style="padding:6px 12px; font-size:11px;">
+                                        Cancelar
+                                    </button>
+                                </form>
+                            {% elif shipment.status == 'shipped' %}
+                                {% if shipment.tracking_url %}
+                                <a href="{{ shipment.tracking_url }}" target="_blank"
+                                   class="btn-outline-gold" style="padding:6px 12px; font-size:11px;">
+                                    Rastreio
+                                </a>
+                                {% endif %}
+                            {% endif %}
+                            {% if shipment.status == 'shipped' and shipment.print_url %}
+                            <a href="{{ shipment.print_url }}" target="_blank"
+                               class="btn-outline-gold" style="padding:6px 12px; font-size:11px;">
+                                Imprimir etiqueta
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            Nenhum pacote de envio ainda. Quando alguém comprar um
+                            livro físico seu, ele aparecerá aqui.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

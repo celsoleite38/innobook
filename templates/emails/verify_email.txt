@@ -1,4 +1,4 @@
-Confirme seu e-mail — Inno Book
+Confirme seu e-mail — Editora Orange
 
 Olá, {{ user.first_name|default:user.username }}!
 
@@ -7,7 +7,7 @@ confirme seu e-mail acessando o link abaixo:
 
 {{ url }}
 
-Se você não criou uma conta na Inno Book, ignore este e-mail.
+Se você não criou uma conta na Editora Orange, ignore este e-mail.
 
-© Inno Book — Todos os direitos reservados.
-Dúvidas? Entre em contato: suporte@innosoft.com.br
+© Editora Orange — Todos os direitos reservados.
+Dúvidas? Entre em contato: suporte@editoraorange.com.br

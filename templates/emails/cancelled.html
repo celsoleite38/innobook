@@ -1,0 +1,24 @@
+{% extends 'emails/base_email.html' %}
+
+{% block email_subtitle %}Pedido cancelado{% endblock %}
+
+{% block email_body %}
+    <h2>Seu pedido foi cancelado.</h2>
+    <p>O pedido abaixo foi cancelado e o valor pago está sendo devolvido.</p>
+
+    <div class="box">
+        {% for order in shipment.orders.all %}
+        <strong>{{ order.ebook.title }}</strong><br>
+        <small style="color:#666;">
+            Formato: {{ order.get_variant_display }}<br>
+            Valor: R$ {{ order.amount }}{% if order.shipping_cost %} + frete R$ {{ order.shipping_cost }}{% endif %}<br>
+            Pedido: #{{ order.order_id }}
+        </small>
+        {% if not forloop.last %}<hr style="border:none;border-top:1px solid #e0d8cc;margin:10px 0;">{% endif %}
+        {% endfor %}
+    </div>
+
+    <p class="muted">
+        O reembolso pode levar de 1 a 5 dias úteis, conforme o banco/bandeira.
+    </p>
+{% endblock %}

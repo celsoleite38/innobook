@@ -18,89 +18,307 @@ from django.contrib.admin.views.decorators import staff_member_required
 from functools import wraps
 from django.core.paginator import Paginator
 from .forms import WithdrawReceiptForm
+from decimal import Decimal, ROUND_HALF_UP
 
 
 
 # ── Checkout ───────────────────────────────────────────────
 
+def _get_shipping_from_post(request):
+    return {
+        'shipping_name':       request.POST.get('shipping_name', '').strip(),
+        'shipping_zipcode':    request.POST.get('shipping_zipcode', '').strip(),
+        'shipping_address':    request.POST.get('shipping_address', '').strip(),
+        'shipping_number':     request.POST.get('shipping_number', '').strip(),
+        'shipping_district':   request.POST.get('shipping_district', '').strip(),
+        'shipping_complement': request.POST.get('shipping_complement', '').strip(),
+        'shipping_city':       request.POST.get('shipping_city', '').strip(),
+        'shipping_state':      request.POST.get('shipping_state', '').strip(),
+    }
+
+
+def _shipping_is_valid(data):
+    return all([data['shipping_name'], data['shipping_zipcode'],
+                data['shipping_address'], data['shipping_number'],
+                data['shipping_district'],
+                data['shipping_city'], data['shipping_state']])
+
+
+# ── Cotação de frete (livro físico) ─────────────────────────
+
+def _group_cart_by_author(items):
+    """Agrupa itens físicos do carrinho por escritor (1 pacote por escritor)."""
+    from apps.products.models import FORMAT_PHYSICAL, FORMAT_COMBO
+    groups = {}
+    for item in items:
+        if item.variant in (FORMAT_PHYSICAL, FORMAT_COMBO):
+            groups.setdefault(item.ebook.author_id, []).append(item)
+    return groups
+
+
+@login_required
+def shipping_quote_view(request):
+    """Cotação AJAX do frete — agrupada por escritor (carrinho ou 1 livro)."""
+    from apps.delivery.melhor_envios import (
+        calcular_frete, shipping_ready_error, MelhorEnviosError,
+    )
+    from apps.products.models import FORMAT_PHYSICAL
+
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método não permitido.'}, status=405)
+
+    zipcode = request.POST.get('zipcode', '').strip()
+    if len(zipcode) < 8:
+        return JsonResponse({'error': 'Informe um CEP válido.'}, status=400)
+
+    ebook_id = request.POST.get('ebook_id', '').strip()
+
+    if ebook_id:
+        # Checkout de livro único
+        ebook = Ebook.objects.filter(id=ebook_id, status='published').first()
+        if not ebook:
+            return JsonResponse({'error': 'Livro não encontrado.'}, status=404)
+        variant = request.POST.get('variant') or FORMAT_PHYSICAL
+        normalized = {
+            ebook.author_id: [{
+                'variant': variant,
+                'price': ebook.get_format_price(variant),
+                'ebook': ebook,
+            }]
+        }
+    else:
+        cart = getattr(request.user, 'cart', None)
+        if not cart or not cart.items.exists():
+            return JsonResponse({'error': 'Carrinho vazio.'}, status=400)
+        groups = _group_cart_by_author(cart.items.select_related(
+            'ebook', 'ebook__author'
+        ))
+        normalized = {
+            author_id: [
+                {'variant': i.variant, 'price': i.price, 'ebook': i.ebook}
+                for i in items
+            ]
+            for author_id, items in groups.items()
+        }
+
+    if not normalized:
+        return JsonResponse({'error': 'Seu carrinho não tem livros físicos.'}, status=400)
+
+    packages = []
+    for author_id, items in normalized.items():
+        author = items[0]['ebook'].author
+        profile = getattr(author, 'shipping_profile', None)
+        ready_error = shipping_ready_error(author)
+        pkg = {
+            'author_id':     author_id,
+            'author_name':   author.get_full_name() or author.username,
+            'connected':     ready_error is None,
+            'origin_zipcode': profile.zipcode if profile else '',
+            'offers':        [],
+            'error':         ready_error or '',
+        }
+        if not ready_error:
+            try:
+                offers = calcular_frete(author, profile.zipcode, zipcode, [
+                    {'ebook': item['ebook'], 'quantity': 1, 'unit_value': item['price']}
+                    for item in items
+                ])
+                pkg['offers'] = offers
+            except MelhorEnviosError as e:
+                pkg['error'] = str(e)
+            except Exception as e:
+                pkg['error'] = f'Erro ao cotar frete: {e}'
+        packages.append(pkg)
+
+    return JsonResponse({'packages': packages})
+
+
 @login_required
 def checkout_view(request, ebook_id):
+    from apps.products.models import FORMAT_DIGITAL, FORMAT_PHYSICAL, FORMAT_COMBO
+
     ebook = get_object_or_404(Ebook, id=ebook_id, status='published')
 
-    # Já comprou?
-    if request.user.orders.filter(ebook=ebook, status='paid').exists():
-        messages.info(request, 'Você já possui este eBook!')
+    variant = request.GET.get('variant') or request.POST.get('variant') or FORMAT_DIGITAL
+    if variant not in (FORMAT_DIGITAL, FORMAT_PHYSICAL, FORMAT_COMBO):
+        variant = FORMAT_DIGITAL
+    if variant in (FORMAT_PHYSICAL, FORMAT_COMBO) and not ebook.has_physical():
+        messages.warning(request, 'A versão física deste livro está esgotada.')
+        return redirect('products:detail', slug=ebook.slug)
+
+    # Já comprou esse formato?
+    if ebook.user_owns_format(request.user, variant):
+        messages.info(request, 'Você já possui esta versão deste eBook!')
         return redirect('accounts:dashboard')
 
-    if request.method == 'POST':
-        billing_type = request.POST.get('billing_type', 'PIX')
+    needs_shipping = variant in (FORMAT_PHYSICAL, FORMAT_COMBO)
+    amount         = ebook.get_format_price(variant)
+    shipping       = _get_shipping_from_post(request)
+    freight        = Decimal('0')
+    offer_choice   = None
 
-        # Cria pedido pendente
-        order = Order.objects.create(
-            buyer       = request.user,
-            ebook       = ebook,
-            amount      = ebook.get_price(),
-            status      = Order.STATUS_PENDING,
-            gateway     = 'asaas',
-            buyer_email = request.user.email,
-            buyer_name  = request.user.get_full_name() or request.user.username,
+    if needs_shipping and shipping['shipping_zipcode']:
+        offer_choice = _build_single_offer(
+            request, ebook, shipping['shipping_zipcode']
         )
-
-        try:
-            # Cria cobrança no Asaas (SEM dados de cartão — cartão vai para o
-            # checkout hospedado do Asaas via invoiceUrl)
-            charge = create_charge(order, billing_type, ip=get_client_ip(request))
-
-            # Salva ID da cobrança
-            order.gateway_order_id = charge['id']
-            order.save()
-
-            # Registra pagamento
-            Payment.objects.create(
-                order        = order,
-                method       = billing_type.lower(),
-                amount       = order.amount,
-                raw_response = charge,
+        if offer_choice:
+            freight = Decimal(str(offer_choice['price']))
+        elif offer_choice is False:
+            messages.error(
+                request,
+                'Selecione a transportadora para o frete do seu livro físico.'
             )
 
-            # Cartão — checkout seguro do Asaas (o cliente paga na página deles)
-            if billing_type == 'CREDIT_CARD':
-                return render(request, 'payments/card.html', {
-                    'order'      : order,
-                    'charge'     : charge,
-                    'invoice_url': charge.get('invoiceUrl', ''),
-                    'charge_id'  : charge['id'],
-                })
+    if request.method == 'POST':
+        if needs_shipping and not _shipping_is_valid(shipping):
+            messages.error(
+                request,
+                'Preencha todos os dados de entrega do livro físico (incluindo bairro).'
+            )
+        elif needs_shipping and not offer_choice:
+            messages.error(
+                request,
+                'Selecione a transportadora para o frete do seu livro físico.'
+            )
+        else:
+            billing_type = request.POST.get('billing_type', 'PIX')
 
-            # PIX — mostra QR code
-            if billing_type == 'PIX':
-                pix = get_pix_qrcode(charge['id'])
-                return render(request, 'payments/pix.html', {
-                    'order'     : order,
-                    'pix'       : pix,
-                    'charge_id' : charge['id'],
-                })
+            # Cria pedido pendente
+            order = Order.objects.create(
+                buyer       = request.user,
+                ebook       = ebook,
+                variant     = variant,
+                amount      = amount,
+                status      = Order.STATUS_PENDING,
+                gateway     = 'asaas',
+                buyer_email = request.user.email,
+                buyer_name  = request.user.get_full_name() or request.user.username,
+                **shipping,
+            )
 
-            # Boleto — mostra linha digitável
-            if billing_type == 'BOLETO':
-                return render(request, 'payments/boleto.html', {
-                    'order'     : order,
-                    'charge'    : charge,
-                })
-
-        except Exception as e:
-            order.delete()
-            erro = str(e)
-            if 'CPF é obrigatório' in erro:
-                messages.warning(
-                    request,
-                    'Por favor, preencha seu CPF no perfil antes de comprar.'
+            # Vincula o pacote físico (1 livro → 1 pacote)
+            if needs_shipping and offer_choice:
+                from apps.delivery.models import Shipment
+                shipment = Shipment.objects.create(
+                    producer      = ebook.author,
+                    buyer         = request.user,
+                    status        = Shipment.STATUS_AWAITING,
+                    freight_cost  = freight,
+                    offer_id      = offer_choice['id'],
+                    carrier       = offer_choice['name'],
+                    delivery_time = offer_choice.get('delivery_time') or 0,
+                    quote_payload = {
+                        'offer_id': offer_choice['id'],
+                        'name': offer_choice['name'],
+                        'packages': offer_choice.get('packages', []),
+                    },
                 )
-                return redirect('accounts:profile')
-            messages.error(request, f'Erro ao processar pagamento: {erro}')
-            return redirect('products:detail', slug=ebook.slug)
+                shipment.orders.set([order])
+                order.shipping_cost = freight
+                order.save(update_fields=['shipping_cost'])
 
-    return render(request, 'payments/checkout.html', {'ebook': ebook})
+            try:
+                # Cria cobrança no Asaas (SEM dados de cartão — cartão vai para o
+                # checkout hospedado do Asaas via invoiceUrl)
+                charge = create_charge(
+                    order, billing_type,
+                    ip=get_client_ip(request),
+                    value=order.total_with_shipping,
+                )
+
+                # Salva ID da cobrança
+                order.gateway_order_id = charge['id']
+                order.save()
+
+                # Registra pagamento
+                Payment.objects.create(
+                    order        = order,
+                    method       = billing_type.lower(),
+                    amount       = order.total_with_shipping,
+                    raw_response = charge,
+                )
+
+                # Cartão — checkout seguro do Asaas (o cliente paga na página deles)
+                if billing_type == 'CREDIT_CARD':
+                    return render(request, 'payments/card.html', {
+                        'order'      : order,
+                        'charge'     : charge,
+                        'invoice_url': charge.get('invoiceUrl', ''),
+                        'charge_id'  : charge['id'],
+                    })
+
+                # PIX — mostra QR code
+                if billing_type == 'PIX':
+                    pix = get_pix_qrcode(charge['id'])
+                    return render(request, 'payments/pix.html', {
+                        'order'     : order,
+                        'pix'       : pix,
+                        'charge_id' : charge['id'],
+                    })
+
+                # Boleto — mostra linha digitável
+                if billing_type == 'BOLETO':
+                    return render(request, 'payments/boleto.html', {
+                        'order'     : order,
+                        'charge'    : charge,
+                    })
+
+            except Exception as e:
+                order.delete()
+                erro = str(e)
+                if 'CPF é obrigatório' in erro:
+                    messages.warning(
+                        request,
+                        'Por favor, preencha seu CPF no perfil antes de comprar.'
+                    )
+                    return redirect('accounts:profile')
+                messages.error(request, f'Erro ao processar pagamento: {erro}')
+                return redirect('products:detail', slug=ebook.slug)
+
+    return render(request, 'payments/checkout.html', {
+        'ebook': ebook,
+        'variant': variant,
+        'amount': amount,
+        'needs_shipping': needs_shipping,
+        'shipping': shipping,
+    })
+
+
+def _build_single_offer(request, ebook, zipcode):
+    """
+    Valida a oferta escolhida no checkout de livro único (server-side).
+    Retorna: dict(offer) se válida | False se inválida | None se não escolhida.
+    """
+    from apps.delivery.melhor_envios import calcular_frete, MelhorEnviosError
+
+    chosen = request.POST.get('offer', '').strip()
+    if not chosen:
+        return None
+
+    author = ebook.author
+    profile = getattr(author, 'shipping_profile', None)
+    ready_error = shipping_ready_error(author)
+    if ready_error:
+        messages.error(
+            request,
+            f'O escritor {author.get_full_name() or author.username} não está '
+            f'pronto para envios físicos: {ready_error}'
+        )
+        return False
+
+    try:
+        offers = calcular_frete(author, profile.zipcode, zipcode, [
+            {'ebook': ebook, 'quantity': 1, 'unit_value': ebook.get_format_price(request.POST.get('variant') or 'physical')}
+        ])
+    except MelhorEnviosError as e:
+        messages.error(request, str(e))
+        return False
+
+    offer = next((o for o in offers if o['id'] == chosen), None)
+    if not offer:
+        messages.error(request, 'O frete escolhido expirou. Refaça a cotação.')
+        return False
+    return offer
 
 
 # ── Verificar PIX (chamada AJAX da página PIX) ─────────────
@@ -264,16 +482,29 @@ def asaas_webhook(request):
 # ── Helper interno ─────────────────────────────────────────
 
 def _confirm_order(order, charge_id):
-    """Confirma pedido, gera token e envia emails."""
+    """Confirma pedido, gera token (digital/combo), baixa estoque e envia emails."""
+    from apps.products.models import (
+        FORMAT_DIGITAL, FORMAT_PHYSICAL, FORMAT_COMBO
+    )
+
     order.status             = Order.STATUS_PAID
     order.gateway_payment_id = charge_id
     order.paid_at            = timezone.now()
     order.save()
 
-    if not order.download_tokens.exists():
-        token = create_download_token(order, days_valid=365, max_downloads=10)
-    else:
-        token = order.download_tokens.filter(is_active=True).first()
+    # Baixa estoque do livro físico
+    if order.variant in (FORMAT_PHYSICAL, FORMAT_COMBO):
+        ebook = order.ebook
+        if ebook.physical_stock and ebook.physical_stock > 0:
+            ebook.physical_stock -= 1
+            ebook.save(update_fields=['physical_stock'])
+
+    token = None
+    if order.variant in (FORMAT_DIGITAL, FORMAT_COMBO):
+        if not order.download_tokens.exists():
+            token = create_download_token(order, days_valid=365, max_downloads=10)
+        else:
+            token = order.download_tokens.filter(is_active=True).first()
 
     try:
         send_purchase_confirmation(order, token)
@@ -284,6 +515,12 @@ def _confirm_order(order, charge_id):
 @login_required
 def cart_checkout_view(request):
     from apps.cart.models import Cart, CartItem
+    from apps.products.models import FORMAT_PHYSICAL, FORMAT_COMBO
+    from apps.delivery.models import Shipment
+    from apps.delivery.melhor_envios import (
+        calcular_frete, shipping_ready_error, MelhorEnviosError,
+    )
+    from decimal import Decimal, ROUND_HALF_UP
 
     try:
         cart = request.user.cart
@@ -291,103 +528,245 @@ def cart_checkout_view(request):
         messages.error(request, 'Carrinho vazio.')
         return redirect('cart:cart')
 
-    items = cart.items.select_related('ebook').all()
+    items = list(cart.items.select_related('ebook', 'ebook__author'))
 
     if not items:
         messages.error(request, 'Seu carrinho está vazio.')
         return redirect('cart:cart')
 
-    # Remove itens já comprados
-    paid_ids = request.user.orders.filter(
-        status='paid'
-    ).values_list('ebook_id', flat=True)
-    items = items.exclude(ebook_id__in=paid_ids)
+    # Remove itens já comprados (por formato)
+    items = [item for item in items if not item.ebook.user_owns_format(
+        request.user, item.variant
+    )]
 
     if not items:
-        messages.info(request, 'Todos os eBooks já foram comprados!')
+        messages.info(request, 'Todos os itens já foram comprados!')
         return redirect('accounts:dashboard')
 
     total = sum(item.price for item in items)
+    needs_shipping = any(
+        item.variant in (FORMAT_PHYSICAL, FORMAT_COMBO) for item in items
+    )
+
+    shipping = _get_shipping_from_post(request)
+    packages = []  # list(dict(author, items, offer)) — validado no POST
+
+    if needs_shipping and shipping['shipping_zipcode']:
+        packages, quote_errors = _build_packages_from_post(
+            request, items, shipping['shipping_zipcode']
+        )
+    else:
+        quote_errors = []
 
     if request.method == 'POST':
-        billing_type = request.POST.get('billing_type', 'PIX')
-        orders_criados = []
-
-        try:
-            for item in items:
-                order = Order.objects.create(
-                    buyer       = request.user,
-                    ebook       = item.ebook,
-                    amount      = item.price,
-                    status      = Order.STATUS_PENDING,
-                    gateway     = 'asaas',
-                    buyer_email = request.user.email,
-                    buyer_name  = request.user.get_full_name() or request.user.username,
-                )
-                orders_criados.append(order)
-
-            # Cria UMA cobrança no Asaas com o total
-            # Usamos o primeiro order como referência
-            order_ref = orders_criados[0]
-            order_ref.amount = total
-            order_ref.save()
-
-            charge = create_charge(order_ref, billing_type, ip=get_client_ip(request))
-            order_ref.gateway_order_id = charge['id']
-            order_ref.save()
-
-            # Salva charge_id nos outros pedidos também
-            for order in orders_criados[1:]:
-                order.gateway_order_id = charge['id']
-                order.save()
-
-            Payment.objects.create(
-                order        = order_ref,
-                method       = billing_type.lower(),
-                amount       = total,
-                raw_response = charge,
+        if needs_shipping and not _shipping_is_valid(shipping):
+            messages.error(
+                request,
+                'Preencha todos os dados de entrega do livro físico (incluindo bairro).'
             )
+        elif needs_shipping and quote_errors:
+            messages.error(request, ' '.join(quote_errors))
+        else:
+            billing_type = request.POST.get('billing_type', 'PIX')
+            orders_criados = []
+            order_map = {}
 
-            # Limpa o carrinho
-            cart.items.all().delete()
+            try:
+                for item in items:
+                    order = Order.objects.create(
+                        buyer       = request.user,
+                        ebook       = item.ebook,
+                        variant     = item.variant,
+                        amount      = item.price,
+                        status      = Order.STATUS_PENDING,
+                        gateway     = 'asaas',
+                        buyer_email = request.user.email,
+                        buyer_name  = request.user.get_full_name() or request.user.username,
+                        **shipping,
+                    )
+                    orders_criados.append(order)
+                    order_map[item.id] = order
 
-            # Cartão — checkout seguro do Asaas
-            if billing_type == 'CREDIT_CARD':
-                return render(request, 'payments/card.html', {
-                    'order'      : order_ref,
-                    'charge'     : charge,
-                    'invoice_url': charge.get('invoiceUrl', ''),
-                    'charge_id'  : charge['id'],
-                })
+                # Frete: 1 pacote por escritor, fracionado entre os pedidos
+                shipping_total = Decimal('0')
+                for pkg in packages:
+                    pkg_orders = [order_map[i.id] for i in pkg['items']]
+                    shipment = Shipment.objects.create(
+                        producer      = pkg['author'],
+                        buyer         = request.user,
+                        status        = Shipment.STATUS_AWAITING,
+                        freight_cost  = Decimal(str(pkg['offer']['price'])),
+                        offer_id      = pkg['offer']['id'],
+                        carrier       = pkg['offer']['name'],
+                        delivery_time = pkg['offer'].get('delivery_time') or 0,
+                        quote_payload = {
+                            'offer_id': pkg['offer']['id'],
+                            'name': pkg['offer']['name'],
+                            'packages': pkg['offer'].get('packages', []),
+                        },
+                    )
+                    shipment.orders.set(pkg_orders)
 
-            if billing_type == 'PIX':
-                pix = get_pix_qrcode(charge['id'])
-                return render(request, 'payments/pix.html', {
-                    'order'    : order_ref,
-                    'pix'      : pix,
-                    'charge_id': charge['id'],
-                })
+                    freight = shipment.freight_cost
+                    shipping_total += freight
+                    split = (freight / len(pkg_orders)).quantize(
+                        Decimal('0.01'), rounding=ROUND_HALF_UP
+                    )
+                    for i, order in enumerate(pkg_orders):
+                        order.shipping_cost = (
+                            freight - split * (len(pkg_orders) - 1)
+                            if i == len(pkg_orders) - 1 else split
+                        )
+                        order.save(update_fields=['shipping_cost'])
 
-            if billing_type == 'BOLETO':
-                return render(request, 'payments/boleto.html', {
-                    'order' : order_ref,
-                    'charge': charge,
-                })
+                grand_total = Decimal(str(total)) + shipping_total
 
-        except Exception as e:
-            for order in orders_criados:
-                order.delete()
-            erro = str(e)
-            if 'CPF é obrigatório' in erro:
-                messages.warning(request, 'Preencha seu CPF no perfil antes de comprar.')
-                return redirect('accounts:profile')
-            messages.error(request, f'Erro ao processar pagamento: {erro}')
-            return redirect('cart:cart')
+                # Cria UMA cobrança no Asaas com o total (produtos + fretes)
+                order_ref = orders_criados[0]
+                charge = create_charge(
+                    order_ref, billing_type,
+                    ip=get_client_ip(request),
+                    value=grand_total,
+                )
+
+                # Salva charge_id em todos os pedidos
+                for order in orders_criados:
+                    order.gateway_order_id = charge['id']
+                    order.save(update_fields=['gateway_order_id'])
+
+                Payment.objects.create(
+                    order        = order_ref,
+                    method       = billing_type.lower(),
+                    amount       = grand_total,
+                    raw_response = charge,
+                )
+
+                # Limpa o carrinho
+                cart.items.all().delete()
+
+                # Cartão — checkout seguro do Asaas
+                if billing_type == 'CREDIT_CARD':
+                    return render(request, 'payments/card.html', {
+                        'order'      : order_ref,
+                        'charge'     : charge,
+                        'invoice_url': charge.get('invoiceUrl', ''),
+                        'charge_id'  : charge['id'],
+                    })
+
+                if billing_type == 'PIX':
+                    pix = get_pix_qrcode(charge['id'])
+                    return render(request, 'payments/pix.html', {
+                        'order'    : order_ref,
+                        'pix'      : pix,
+                        'charge_id': charge['id'],
+                    })
+
+                if billing_type == 'BOLETO':
+                    return render(request, 'payments/boleto.html', {
+                        'order' : order_ref,
+                        'charge': charge,
+                    })
+
+            except Exception as e:
+                for order in orders_criados:
+                    order.delete()
+                erro = str(e)
+                if 'CPF é obrigatório' in erro:
+                    messages.warning(request, 'Preencha seu CPF no perfil antes de comprar.')
+                    return redirect('accounts:profile')
+                messages.error(request, f'Erro ao processar pagamento: {erro}')
+                return redirect('cart:cart')
 
     return render(request, 'payments/cart_checkout.html', {
         'items': items,
         'total': total,
+        'needs_shipping': needs_shipping,
+        'shipping': shipping,
     })
+
+
+def _build_packages_from_post(request, items, zipcode):
+    """Re-cota o frete (server-side) e valida a oferta escolhida por escritor."""
+    from apps.delivery.melhor_envios import (
+        calcular_frete, shipping_ready_error, MelhorEnviosError,
+    )
+    groups = _group_cart_by_author(items)
+    packages = []
+    errors = []
+
+    for author_id, group in groups.items():
+        author = group[0].ebook.author
+        chosen = request.POST.get(f'offer_{author_id}', '').strip()
+        if not chosen:
+            errors.append(
+                f'Selecione a transportadora para os livros de '
+                f'{author.get_full_name() or author.username}.'
+            )
+            continue
+
+        profile = getattr(author, 'shipping_profile', None)
+        ready_error = shipping_ready_error(author)
+        if ready_error:
+            errors.append(
+                f'O escritor {author.get_full_name() or author.username} não está '
+                f'pronto para envios físicos: {ready_error}'
+            )
+            continue
+
+        try:
+            offers = calcular_frete(author, profile.zipcode, zipcode, [
+                {'ebook': i.ebook, 'quantity': 1, 'unit_value': i.price}
+                for i in group
+            ])
+        except MelhorEnviosError as e:
+            errors.append(str(e))
+            continue
+
+        offer = next((o for o in offers if o['id'] == chosen), None)
+        if not offer:
+            errors.append(
+                f'O frete escolhido para {author.get_full_name() or author.username} '
+                f'expirou. Refaça a cotação.'
+            )
+            continue
+
+        packages.append({'author': author, 'items': group, 'offer': offer})
+
+    return packages, errors
+
+@login_required
+def order_cancel_shipping_view(request, order_id):
+    """Comprador cancela um pedido físico antes da postagem (estorno total)."""
+    from apps.delivery.views import cancel_shipment
+
+    if request.method != 'POST':
+        return redirect('payments:my_orders')
+
+    order = get_object_or_404(Order, order_id=order_id, buyer=request.user)
+
+    if not order.can_cancel_shipping():
+        if order.shipping_status == order.SHIPPING_READY:
+            messages.error(
+                request,
+                'O pacote já está com a etiqueta gerada e não pode mais ser '
+                'cancelado automaticamente.'
+            )
+        else:
+            messages.error(request, 'Este pedido não pode mais ser cancelado.')
+        return redirect('payments:my_orders')
+
+    if not order.shipment:
+        messages.error(request, 'Este pedido não possui pacote de envio.')
+        return redirect('payments:my_orders')
+
+    result = cancel_shipment(order.shipment)
+    if isinstance(result, str):
+        messages.error(request, result)
+    else:
+        messages.success(request, 'Pedido cancelado e valor reembolsado!')
+
+    return redirect('payments:my_orders')
+
 
 @login_required
 def my_orders_view(request):
@@ -529,27 +908,44 @@ def admin_commissions_view(request):
     ).annotate(
         total_orders = Count('id'),
         gross        = Sum('amount'),
+        freight      = Sum('shipping_cost'),
     ).order_by('-gross')
+
+    # Quem usa a conta própria recebe o frete; conta da Editora → a Editora paga
+    from apps.delivery.models import ShippingProfile
+    shipping_modes = {
+        sp.producer_id: sp.uses_editora_account
+        for sp in ShippingProfile.objects.filter(
+            producer_id__in=[s['ebook__author__id'] for s in sales]
+        )
+    }
 
     # Calcula comissão e líquido por produtor
     producers = []
     total_gross_all      = 0
     total_commission_all = 0
     total_net_all        = 0
+    total_freight_all    = 0
 
     for s in sales:
         gross      = s['gross'] or 0
         comm       = gross * commission
         net        = gross - comm
+        freight    = s['freight'] or 0
+        # Frete só pertence ao escritor que usa a conta própria no ME
+        freight_credit = freight if not shipping_modes.get(
+            s['ebook__author__id'], True
+        ) else 0
 
         total_gross_all      += gross
         total_commission_all += comm
         total_net_all        += net
+        total_freight_all    += freight
 
-        # Saques já realizados pelo produtor
+        # Saques já realizados pelo produtor (somente PAGO — com comprovante)
         withdrawn = WithdrawRequest.objects.filter(
             producer_id = s['ebook__author__id'],
-            status__in  = ['approved', 'paid']
+            status      = 'paid'
         ).aggregate(t=Sum('amount'))['t'] or 0
 
         producers.append({
@@ -562,18 +958,48 @@ def admin_commissions_view(request):
             'gross'     : gross,
             'commission': comm,
             'net'       : net,
+            'freight'   : freight,
             'withdrawn' : withdrawn,
-            'available' : net - withdrawn,
+            'available' : net + freight_credit - withdrawn,
         })
 
     totals = {
         'gross'     : total_gross_all,
         'commission': total_commission_all,
         'net'       : total_net_all,
+        'freight'   : total_freight_all,
     }
 
     return render(request, 'admin_panel/commissions.html', {
         'producers'         : producers,
         'totals'            : totals,
         'commission_percent': config.commission_percent,
+    })
+
+
+@superuser_required
+def admin_shipping_view(request):
+    """Gestão de Envios: conta da Editora + modo de pagamento por escritor."""
+    from apps.delivery.models import EditoraShippingAccount, ShippingProfile
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'toggle_editora':
+            profile = ShippingProfile.objects.filter(
+                producer_id=request.POST.get('producer_id')
+            ).first()
+            if profile:
+                profile.uses_editora_account = request.POST.get('use_editora') == '1'
+                profile.save(update_fields=['uses_editora_account', 'updated_at'])
+                messages.success(request, 'Configuração de frete atualizada.')
+        return redirect('payments:admin_shipping')
+
+    account  = EditoraShippingAccount.get()
+    profiles = ShippingProfile.objects.select_related('producer').order_by(
+        'producer__username'
+    )
+
+    return render(request, 'admin_panel/shipping.html', {
+        'account' : account,
+        'profiles': profiles,
     })

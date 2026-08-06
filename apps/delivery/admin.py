@@ -1,5 +1,8 @@
 from django.contrib import admin
-from .models import DownloadToken, DownloadLog
+from .models import (
+    DownloadToken, DownloadLog, Shipment, ShippingProfile,
+    EditoraShippingAccount,
+)
 
 
 class DownloadLogInline(admin.TabularInline):
@@ -65,3 +68,81 @@ class DownloadLogAdmin(admin.ModelAdmin):
     @admin.display(description='eBook')
     def get_ebook(self, obj):
         return obj.token.order.ebook.title
+
+
+@admin.register(Shipment)
+class ShipmentAdmin(admin.ModelAdmin):
+    list_display  = ['id', 'producer', 'carrier', 'freight_cost', 'tracking_code', 'status', 'created_at']
+    list_filter   = ['status', 'carrier']
+    search_fields = ['producer__username', 'tracking_code', 'melhor_envios_id']
+    readonly_fields = ['created_at', 'updated_at']
+
+    fieldsets = (
+        ('Pacote', {
+            'fields': ('producer', 'buyer', 'status', 'carrier', 'delivery_time')
+        }),
+        ('Frete', {
+            'fields': ('freight_cost', 'offer_id', 'quote_payload')
+        }),
+        ('Melhor Envios', {
+            'fields': ('melhor_envios_id', 'tracking_code', 'tracking_url', 'label_pdf', 'print_url')
+        }),
+        ('Datas', {
+            'fields': ('created_at', 'updated_at', 'posted_at', 'delivered_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+@admin.register(ShippingProfile)
+class ShippingProfileAdmin(admin.ModelAdmin):
+    list_display  = ['producer', 'full_name', 'zipcode', 'city', 'state', 'is_connected', 'uses_editora_account', 'updated_at']
+    list_filter   = ['uses_editora_account', 'state']
+    search_fields = ['producer__username', 'full_name', 'zipcode']
+
+    fieldsets = (
+        ('Remetente', {
+            'fields': (
+                'full_name', 'document', 'phone',
+                'zipcode', 'address', 'number', 'complement', 'district',
+                'city', 'state'
+            )
+        }),
+        ('Pagamento do frete', {
+            'fields': ('uses_editora_account',),
+            'description': (
+                'Marcado (padrão): a conta Melhor Envios da Editora paga a '
+                'postagem. Desmarcado: a conta própria do escritor paga.'
+            )
+        }),
+        ('Conexão Melhor Envios', {
+            'fields': (
+                'me_access_token', 'me_refresh_token', 'me_expires_at'
+            ),
+            'classes': ('collapse',)
+        }),
+        ('Datas', {
+            'fields': ('updated_at',),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+@admin.register(EditoraShippingAccount)
+class EditoraShippingAccountAdmin(admin.ModelAdmin):
+    list_display = ['id', 'holder_name', 'is_connected', 'me_expires_at', 'updated_at']
+    readonly_fields = ['me_expires_at', 'updated_at']
+
+    fieldsets = (
+        ('Conta', {
+            'fields': ('holder_name', 'is_connected')
+        }),
+        ('Tokens (OAuth2)', {
+            'fields': ('me_access_token', 'me_refresh_token', 'me_expires_at'),
+            'classes': ('collapse',)
+        }),
+        ('Datas', {
+            'fields': ('updated_at',),
+            'classes': ('collapse',)
+        }),
+    )

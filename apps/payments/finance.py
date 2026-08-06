@@ -23,10 +23,24 @@ def get_producer_financial(producer):
     total_commission = total_gross * Decimal(str(commission))
     total_net        = total_gross - total_commission
 
-    # Total já sacado (aprovado ou pago)
+    # Fretes pagos (livros físicos)
+    # - Conta própria do escritor  → frete é do escritor (reembolso da postagem).
+    # - Conta da Editora (padrão)  → a Editora paga o frete; não creditar.
+    try:
+        profile = producer.shipping_profile
+    except Exception:
+        profile = None
+    if profile and not profile.uses_editora_account:
+        total_shipping = paid_orders.aggregate(
+            t=Sum('shipping_cost')
+        )['t'] or Decimal('0')
+    else:
+        total_shipping = Decimal('0')
+
+    # Total já sacado (somente PAGO — com comprovante enviado)
     total_withdrawn = WithdrawRequest.objects.filter(
         producer=producer,
-        status__in=['approved', 'paid']
+        status='paid'
     ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
 
     # Saques pendentes
@@ -36,7 +50,8 @@ def get_producer_financial(producer):
     ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
 
     # Saldo disponível para saque
-    available = total_net - total_withdrawn - total_pending_withdraw
+    # = líquido das vendas + fretes − saques realizados − saques pendentes
+    available = total_net + total_shipping - total_withdrawn - total_pending_withdraw
 
     return {
         'total_gross'           : total_gross,
@@ -44,6 +59,7 @@ def get_producer_financial(producer):
         'commission_percent'    : config.commission_percent,
         'total_commission'      : total_commission,
         'total_net'             : total_net,
+        'total_shipping'        : total_shipping,
         'total_withdrawn'       : total_withdrawn,
         'total_pending_withdraw': total_pending_withdraw,
         'available'             : max(available, Decimal('0')),

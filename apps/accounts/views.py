@@ -159,7 +159,18 @@ def login_view(request):
                 reset_login_failures(user)
                 next_url = _safe_next(request)
                 if requires_two_factor(user):
-                    start_two_factor_login(request, user)
+                    try:
+                        start_two_factor_login(request, user)
+                    except Exception:
+                        request.session.pop('otp_user_id', None)
+                        request.session.pop('otp_code', None)
+                        request.session.pop('otp_expires', None)
+                        messages.error(
+                            request,
+                            'Não foi possível enviar o código por e-mail agora. '
+                            'Tente novamente em instantes.'
+                        )
+                        return redirect('accounts:login')
                     messages.info(
                         request,
                         'Enviamos um código de 6 dígitos para o seu e-mail.'

@@ -7,6 +7,18 @@ from core.storages import ProtectedFileSystemStorage
 protected_storage = ProtectedFileSystemStorage()
 
 
+# Formatos de compra
+FORMAT_DIGITAL  = 'digital'
+FORMAT_PHYSICAL = 'physical'
+FORMAT_COMBO    = 'combo'
+
+FORMAT_CHOICES = [
+    (FORMAT_DIGITAL,  'Digital'),
+    (FORMAT_PHYSICAL, 'Físico'),
+    (FORMAT_COMBO,    'Físico + Digital'),
+]
+
+
 class Category(models.Model):
     name = models.CharField(max_length=100)
     slug = models.SlugField(unique=True, blank=True)
@@ -101,6 +113,41 @@ class Ebook(models.Model):
         verbose_name='Preço promocional'
     )
 
+    # Livro físico (impresso)
+    physical_price = models.DecimalField(
+        max_digits=8, decimal_places=2,
+        null=True, blank=True,
+        verbose_name='Preço do livro físico'
+    )
+    combo_price = models.DecimalField(
+        max_digits=8, decimal_places=2,
+        null=True, blank=True,
+        verbose_name='Preço físico + digital (combo)'
+    )
+    physical_stock = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Estoque físico'
+    )
+
+    # Dados de embalagem (para cotação de frete)
+    physical_weight_g = models.PositiveIntegerField(
+        default=300,
+        verbose_name='Peso físico (gramas)',
+        help_text='Peso do livro físico embalado, em gramas.'
+    )
+    physical_length_cm = models.DecimalField(
+        max_digits=5, decimal_places=2, default=16,
+        verbose_name='Comprimento (cm)'
+    )
+    physical_width_cm = models.DecimalField(
+        max_digits=5, decimal_places=2, default=16,
+        verbose_name='Largura (cm)'
+    )
+    physical_height_cm = models.DecimalField(
+        max_digits=5, decimal_places=2, default=2,
+        verbose_name='Altura (cm)'
+    )
+
     # Status e controle
     status      = models.CharField(
         max_length=20,
@@ -144,6 +191,50 @@ class Ebook(models.Model):
         if self.file_mobi:
             formats.append('MOBI')
         return formats
+
+    def has_physical(self):
+        return bool(self.physical_price and self.physical_stock)
+
+    def physical_dimensions(self):
+        """Retorna (comprimento, largura, altura) em cm, ou None se incompleto."""
+        if not all([self.physical_length_cm, self.physical_width_cm,
+                    self.physical_height_cm, self.physical_weight_g]):
+            return None
+        return (
+            float(self.physical_length_cm),
+            float(self.physical_width_cm),
+            float(self.physical_height_cm),
+        )
+
+    def get_combo_price(self):
+        """Preço do combo físico + digital (ou soma dos dois)."""
+        if self.combo_price:
+            return self.combo_price
+        return (self.physical_price or 0) + (self.get_price() or 0)
+
+    def get_format_price(self, variant):
+        """Retorna o preço de um formato de compra específico."""
+        if variant == FORMAT_PHYSICAL:
+            return self.physical_price or 0
+        if variant == FORMAT_COMBO:
+            return self.get_combo_price()
+        return self.get_price()
+
+    def get_format_label(self, variant):
+        for value, label in FORMAT_CHOICES:
+            if value == variant:
+                return label
+        return 'Digital'
+
+    def user_owns_format(self, user, variant):
+        """True se o usuário já comprou acesso ao formato solicitado."""
+        from apps.payments.models import Order
+        paid = user.orders.filter(ebook=self, status=Order.STATUS_PAID)
+        if variant == FORMAT_COMBO:
+            return paid.filter(variant=FORMAT_COMBO).exists()
+        if variant == FORMAT_PHYSICAL:
+            return paid.filter(variant__in=[FORMAT_PHYSICAL, FORMAT_COMBO]).exists()
+        return paid.filter(variant__in=[FORMAT_DIGITAL, FORMAT_COMBO]).exists()
 
     def __str__(self):
         return self.title

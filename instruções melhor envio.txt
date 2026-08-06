@@ -1,0 +1,21 @@
+Pronto. Agora o passo a passo:
+Como pegar as credenciais do Sandbox
+1. Entre na sua conta sandbox (separada da produção): https://sandbox.melhorenvio.com.br/login — se ainda não criou, é um cadastro simplificado com saldo fictício de R$ 10.000 para etiquetas de teste.
+2. Vá para a Área Dev do sandbox: https://app-sandbox.melhorenvio.com.br/integracoes/area-dev
+3. Clique em "Cadastrar aplicativo" e preencha:
+- Nome do aplicativo: BookHub (ou similar)
+- URL de redirecionamento (callback): exatamente isso —
+http://127.0.0.1:8000/delivery/envios/oauth/callback/
+(precisa ser idêntico ao ME_REDIRECT_URI; o callback deve ser estático)
+- Permissões/escopos: marque as mesmas que o app pede — shipping-calculate, shipping-checkout, shipping-generate, shipping-print, shipping-tracking, shipping-cancel, cart-write, cart-read, orders-read, purchases-read
+4. Salve. O painel vai exibir o Client ID e o Client Secret — copie para o .env:
+ME_CLIENT_ID=<seu client id>
+ME_CLIENT_SECRET=<seu secret>
+5. ME_WEBHOOK_TOKEN deixe vazio — acabei de ajustar o código para usar o client_secret como chave da assinatura do webhook (é assim que o ME assina o X-ME-Signature).
+
+
+Observações
+- Ajustes que fiz agora: corrigi o callback no .env (faltava /envios/), completei os scopes (shipping-cancel e cart-write eram usados mas não estavam pedidos) e o webhook agora valida com o client_secret.
+- O webhook (/delivery/webhooks/melhor-envios/) só funciona com URL pública/HTTPS (o ME não alcança 127.0.0.1). Para testar local você pode usar um túnel tipo ngrok; sem ele, o status é atualizado manualmente com "Marcar enviado" no painel.
+- No sandbox, a etiqueta muda de status sozinha a cada 15 min (simulando postagem/entrega).
+Quer que eu configure um teste de conexão (script que chama a cotação com suas credenciais) depois que você preencher o .env?

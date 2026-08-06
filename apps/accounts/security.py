@@ -1,4 +1,5 @@
 import secrets
+import time
 from datetime import timedelta
 
 from django.conf import settings
@@ -18,19 +19,33 @@ def generate_otp():
     return f'{secrets.randbelow(1_000_000):06d}'
 
 
+def _send_mail_with_retry(subject, plain, to, html=None, attempts=3, delay=1.5):
+    """Envia e-mail com retentativas para quedas transitórias do SMTP."""
+    last_error = None
+    for i in range(attempts):
+        try:
+            send_mail(
+                subject,
+                plain,
+                settings.DEFAULT_FROM_EMAIL,
+                to,
+                html_message=html,
+                fail_silently=False,
+            )
+            return
+        except Exception as e:
+            last_error = e
+            if i < attempts - 1:
+                time.sleep(delay * (i + 1))
+    raise last_error
+
+
 def send_otp_email(user, otp):
     subject = 'Seu código de acesso — Inno Book'
-    ctx = {'otp': otp, 'user': user, 'validity': OTP_VALID_MINUTES}
+    ctx = {'otp': otp, 'code': otp, 'user': user, 'validity': OTP_VALID_MINUTES}
     html = render_to_string('emails/otp_email.html', ctx)
     plain = render_to_string('emails/otp_email.txt', ctx)
-    send_mail(
-        subject,
-        plain,
-        settings.DEFAULT_FROM_EMAIL,
-        [user.email],
-        html_message=html,
-        fail_silently=False,
-    )
+    _send_mail_with_retry(subject, plain, [user.email], html=html)
 
 
 def send_verification_email(request, user):
@@ -61,7 +76,13 @@ def send_verification_email(request, user):
 
 
 def requires_two_factor(user):
-    return bool(user.two_factor_enabled or user.is_producer() or user.is_staff)
+    if user.is_superuser:
+        return False
+    return bool(
+        user.two_factor_enabled
+        or user.is_producer()
+        or (user.is_staff and not user.is_superuser)
+    )
 
 
 def start_two_factor_login(request, user):

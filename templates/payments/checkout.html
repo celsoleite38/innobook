@@ -48,9 +48,12 @@
                             <p style="font-size:12px; color:#888; margin-bottom:6px;">
                                 {{ ebook.author.get_full_name|default:ebook.author.username }}
                             </p>
+                            <p style="font-size:12px; color:#c9a84c; margin-bottom:0;">
+                                Formato: <strong>{% if variant == 'digital' %}Digital{% elif variant == 'physical' %}Físico{% else %}Físico + Digital{% endif %}</strong>
+                            </p>
                             <p style="font-size:20px; color:#c9a84c;
                                       font-weight:500; margin:0;">
-                                R$ {{ ebook.get_price }}
+                                R$ {{ amount }}
                             </p>
                         </div>
                     </div>
@@ -65,6 +68,79 @@
                     </p>
                     <form method="post">
                         {% csrf_token %}
+                        <input type="hidden" name="variant" value="{{ variant }}">
+
+                        {% if needs_shipping %}
+                        <!-- Dados de entrega (livro físico) -->
+                        <div class="mb-4">
+                            <p style="font-size:11px; letter-spacing:2px; text-transform:uppercase;
+                                       color:#c9a84c; margin-bottom:16px;">
+                                📦 Dados de entrega
+                            </p>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label">Nome do destinatário</label>
+                                    <input type="text" class="form-control" name="shipping_name"
+                                           value="{{ shipping.shipping_name }}" required>
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label">CEP</label>
+                                    <input type="text" class="form-control" name="shipping_zipcode"
+                                           id="shipping_zipcode"
+                                           value="{{ shipping.shipping_zipcode }}" required>
+                                </div>
+                                <div class="col-8">
+                                    <label class="form-label">UF</label>
+                                    <input type="text" class="form-control" name="shipping_state"
+                                           maxlength="2" value="{{ shipping.shipping_state }}" required>
+                                </div>
+                                <div class="col-8">
+                                    <label class="form-label">Endereço</label>
+                                    <input type="text" class="form-control" name="shipping_address"
+                                           value="{{ shipping.shipping_address }}" required>
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label">Número</label>
+                                    <input type="text" class="form-control" name="shipping_number"
+                                           value="{{ shipping.shipping_number }}" required>
+                                </div>
+                                <div class="col-8">
+                                    <label class="form-label">Bairro</label>
+                                    <input type="text" class="form-control" name="shipping_district"
+                                           value="{{ shipping.shipping_district }}" required>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Complemento <small>(opcional)</small></label>
+                                    <input type="text" class="form-control" name="shipping_complement"
+                                           value="{{ shipping.shipping_complement }}">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Cidade</label>
+                                    <input type="text" class="form-control" name="shipping_city"
+                                           value="{{ shipping.shipping_city }}" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Frete -->
+                        <div class="mb-4" id="frete-section">
+                            <p style="font-size:11px; letter-spacing:2px; text-transform:uppercase;
+                                       color:#c9a84c; margin-bottom:8px;">
+                                🚚 Frete
+                            </p>
+                            <p style="font-size:12px; color:#888; margin-bottom:12px;">
+                                Informe o CEP e escolha a transportadora.
+                            </p>
+                            <button type="button" class="btn-gold" id="btn-calcular-frete"
+                                    style="padding:10px 18px; font-size:12px; border-radius:4px;">
+                                <i class="bi bi-truck me-1"></i>Calcular frete
+                            </button>
+                            <div id="frete-loading" style="display:none; font-size:13px; color:#888; margin-top:12px;">
+                                Calculando frete...
+                            </div>
+                            <div id="frete-result" style="margin-top:16px;"></div>
+                        </div>
+                        {% endif %}
 
                         <!-- Método de pagamento -->
                         <div class="row g-2 mb-4">
@@ -113,10 +189,12 @@
                         <div style="border-top:0.5px solid #e0d8cc; padding-top:16px; margin-bottom:20px;">
                             <div class="d-flex justify-content-between align-items-baseline">
                                 <span style="font-size:13px; color:#888; text-transform:uppercase;
-                                            letter-spacing:1px;">Total</span>
+                                            letter-spacing:1px;">Total
+                                    <small id="frete-total-label" style="display:none; color:#aaa;"></small>
+                                </span>
                                 <span style="font-family:'Playfair Display',serif; font-size:28px;
                                             color:#c9a84c; font-weight:600;">
-                                    R$ {{ ebook.get_price }}
+                                    R$ <span id="total-valor">{{ amount }}</span>
                                 </span>
                             </div>
                         </div>
@@ -159,6 +237,118 @@ document.querySelector('input[name="billing_type"]:checked')
     .nextElementSibling.style.borderColor = '#c9a84c';
 document.querySelector('input[name="billing_type"]:checked')
     .nextElementSibling.style.background  = '#fdf8ee';
+
+// ── Cotação de frete ───────────────────────────────────────────
+const hasShipping = {{ needs_shipping|yesno:"true,false" }};
+if (hasShipping) {
+    const productValue = parseFloat('{{ amount }}'.replace(',', '.')) || 0;
+    const freteResult  = document.getElementById('frete-result');
+    const freteLoading = document.getElementById('frete-loading');
+    const totalValor   = document.getElementById('total-valor');
+    const freteLabel   = document.getElementById('frete-total-label');
+    const form         = document.querySelector('form[method="post"]');
+    const authorId     = {{ ebook.author_id }};
+    let selecionado = null;
+
+    function formatar(valor) {
+        return valor.toFixed(2).replace('.', ',');
+    }
+
+    function atualizarTotal() {
+        if (selecionado) {
+            totalValor.textContent = formatar(productValue + selecionado.price);
+            freteLabel.textContent = ' (+ frete ' + formatar(selecionado.price) + ')';
+            freteLabel.style.display = '';
+        } else {
+            totalValor.textContent = formatar(productValue);
+            freteLabel.style.display = 'none';
+        }
+    }
+
+    document.getElementById('btn-calcular-frete').addEventListener('click', function() {
+        const zipcode = document.getElementById('shipping_zipcode').value.replace(/\D/g, '');
+        if (zipcode.length < 8) {
+            alert('Informe o CEP para calcular o frete.');
+            return;
+        }
+        freteLoading.style.display = '';
+        freteResult.innerHTML = '';
+
+        const body = 'zipcode=' + encodeURIComponent(zipcode)
+                   + '&ebook_id={{ ebook.id }}'
+                   + '&variant=' + encodeURIComponent(document.querySelector('[name=variant]').value);
+
+        fetch('{% url "payments:shipping_quote" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: body
+        })
+        .then(r => r.json())
+        .then(data => {
+            freteLoading.style.display = 'none';
+            if (data.error) {
+                freteResult.innerHTML = '<p style="color:#b00; font-size:12px;">' + data.error + '</p>';
+                return;
+            }
+
+            data.packages.forEach(pkg => {
+                const card = document.createElement('div');
+                card.style.cssText = 'border:0.5px solid #e0d8cc; border-radius:4px;' +
+                                     'padding:12px; margin-bottom:12px; background:#fdf8ee;';
+
+                let html = '';
+                if (pkg.error) {
+                    html += '<p style="color:#b00; font-size:12px; margin:0;">' + pkg.error + '</p>';
+                } else if (pkg.offers.length === 0) {
+                    html += '<p style="color:#b00; font-size:12px; margin:0;">Nenhuma transportadora disponível.</p>';
+                } else {
+                    html += pkg.offers.map((offer, idx) => {
+                        return '<label class="d-flex align-items-center gap-2 mb-1"' +
+                               ' style="font-size:12px; cursor:pointer; background:#fff;' +
+                               ' border:0.5px solid #e0d8cc; border-radius:4px; padding:8px 10px;">'
+                             + '<input type="radio" name="offer" value="' + offer.id + '"' +
+                               (idx === 0 ? ' checked' : '') + ' data-price="' + offer.price + '"'
+                             + ' data-name="' + offer.name + '">'
+                             + '<span class="flex-grow-1">' + offer.name + '</span>'
+                             + '<span style="color:#c9a84c; font-weight:600;">R$ ' + formatar(parseFloat(offer.price)) + '</span>'
+                             + '<small style="color:#888;">' + (offer.delivery_time ? offer.delivery_time + ' dias úteis' : '') + '</small>'
+                             + '</label>';
+                    }).join('');
+                }
+                card.innerHTML = html;
+                freteResult.appendChild(card);
+
+                const radios = card.querySelectorAll('input[type=radio]');
+                if (radios.length > 0) {
+                    selecionado = { id: radios[0].value, price: parseFloat(radios[0].dataset.price) };
+                    radios.forEach(r => {
+                        r.addEventListener('change', function() {
+                            selecionado = { id: this.value, price: parseFloat(this.dataset.price) };
+                            atualizarTotal();
+                        });
+                    });
+                }
+            });
+            atualizarTotal();
+        })
+        .catch(() => {
+            freteLoading.style.display = 'none';
+            freteResult.innerHTML = '<p style="color:#b00; font-size:12px;">Erro ao calcular o frete. Tente novamente.</p>';
+        });
+    });
+
+    form.addEventListener('submit', function(e) {
+        const zipcode = document.getElementById('shipping_zipcode').value.replace(/\D/g, '');
+        const radios = freteResult.querySelectorAll('input[type=radio]');
+        if (zipcode.length >= 8 && radios.length === 0) {
+            alert('Calcule o frete antes de confirmar o pagamento.');
+            e.preventDefault();
+        }
+    });
+}
 </script>
 {% endblock %}
 

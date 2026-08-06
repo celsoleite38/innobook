@@ -116,6 +116,33 @@
             </div>
         </div>
 
+        <!-- Fretes (livros físicos) — só aparece quando o frete é da conta própria -->
+        {% if financial.total_shipping > 0 %}
+        <div class="row g-3 mb-5">
+            <div class="col-md-3">
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:1.5rem; text-align:center;">
+                    <div style="width:44px; height:44px; background:#fdf8ee;
+                                border-radius:50%; display:flex; align-items:center;
+                                justify-content:center; margin:0 auto 10px;">
+                        <i class="bi bi-truck" style="font-size:18px; color:#c9a84c;"></i>
+                    </div>
+                    <p style="font-family:'Playfair Display',serif; font-size:22px;
+                               font-weight:600; color:#1a1a2e; margin-bottom:2px;">
+                        R$ {{ financial.total_shipping|floatformat:2 }}
+                    </p>
+                    <p style="font-size:11px; letter-spacing:1px; text-transform:uppercase;
+                               color:#888; margin:0;">
+                        Saldo de fretes
+                    </p>
+                    <small style="font-size:11px; color:#aaa;">
+                        Frete pago pelo cliente — já incluso no saldo
+                    </small>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="row g-4">
 
             <!-- Vendas por eBook -->
@@ -237,8 +264,7 @@
                         </div>
                     </form>
                 </div>
-
-                <!-- Histórico de saques -->
+            
                 {% if withdraws %}
                 <div style="background:#fff; border:0.5px solid #e0d8cc;
                             border-radius:6px; overflow:hidden;">
@@ -270,7 +296,7 @@
                                      {% elif w.status == 'approved' %}
                                          background:#f0f4ff; color:#1a1a6e; border:0.5px solid #c0c8e8;
                                      {% else %}
-                                         background:#fdf0f0; color:#8b2020; border:0.5px solid #e8b8b8;
+                                         background:#fdf0f0; color:#8b2020; border:0.5px solid #e99595;
                                      {% endif %}">
                             {{ w.get_status_display }}
                         </span>

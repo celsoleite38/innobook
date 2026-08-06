@@ -11,11 +11,38 @@ class PaymentInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display    = ['order_id', 'buyer_name', 'ebook', 'amount', 'status', 'created_at']
-    list_filter     = ['status', 'gateway']
-    search_fields   = ['buyer_name', 'buyer_email', 'gateway_order_id']
+    list_display    = ['order_id', 'buyer_name', 'ebook', 'variant', 'amount', 'shipping_cost',
+                       'shipping_status', 'status', 'created_at']
+    list_filter     = ['status', 'gateway', 'variant', 'shipping_status']
+    search_fields   = ['buyer_name', 'buyer_email', 'gateway_order_id', 'tracking_code']
     readonly_fields = ['order_id', 'platform_fee', 'producer_amount', 'created_at', 'updated_at', 'paid_at']
     inlines         = [PaymentInline]
+
+    fieldsets = (
+        ('Pedido', {
+            'fields': ('order_id', 'buyer', 'ebook', 'variant', 'amount',
+                       'shipping_cost', 'platform_fee', 'producer_amount', 'status')
+        }),
+        ('Pagamento', {
+            'fields': ('gateway', 'gateway_order_id', 'gateway_payment_id',
+                       'buyer_email', 'buyer_name')
+        }),
+        ('Entrega (livro físico)', {
+            'fields': ('shipping_name', 'shipping_zipcode', 'shipping_address',
+                       'shipping_number', 'shipping_district', 'shipping_complement',
+                       'shipping_city', 'shipping_state'),
+            'classes': ('collapse',)
+        }),
+        ('Status do envio', {
+            'fields': ('shipment', 'shipping_status', 'tracking_code',
+                       'cancel_requested_at', 'shipped_at', 'delivered_at'),
+            'classes': ('collapse',)
+        }),
+        ('Datas', {
+            'fields': ('created_at', 'updated_at', 'paid_at'),
+            'classes': ('collapse',)
+        }),
+    )
 
 
 @admin.register(Payment)

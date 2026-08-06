@@ -118,6 +118,13 @@
                         </div>
 
                         <div class="d-flex align-items-center justify-content-between mt-1">
+                            {% if ebook.has_physical %}
+                            <span style="font-size:9px; color:#fff; background:#1a1a6e;
+                                         padding:2px 8px; border-radius:2px; letter-spacing:1px;
+                                         text-transform:uppercase;">
+                                📖 Físico
+                            </span>
+                            {% endif %}
                             {% if ebook.discount_price %}
                             <div>
                                 <small style="color:#aaa; text-decoration:line-through;

@@ -1,0 +1,32 @@
+{% extends 'emails/base_email.html' %}
+
+{% block email_subtitle %}Seu pedido foi enviado!{% endblock %}
+
+{% block email_body %}
+    <h2>Boa notícia!</h2>
+    <p>Seu livro físico foi postado e já está a caminho.</p>
+
+    <div class="box">
+        <strong>Transportadora:</strong> {{ shipment.carrier }}<br>
+        <strong>Rastreio:</strong> {{ shipment.tracking_code|default:"—" }}<br>
+        <strong>Prazo estimado:</strong> {{ shipment.delivery_time|default:"—" }} dia(s) útil(eis)
+    </div>
+
+    {% if shipment.tracking_url %}
+    <div style="text-align:center;">
+        <a href="{{ shipment.tracking_url }}" class="btn">
+            Acompanhar entrega
+        </a>
+    </div>
+    {% endif %}
+
+    <p class="muted">
+        <strong>Endereço de entrega:</strong><br>
+        {% for order in shipment.orders.all %}
+        {{ order.shipping_name }}<br>
+        {{ order.shipping_address }}, {{ order.shipping_number }}{% if order.shipping_district %} — {{ order.shipping_district }}{% endif %}{% if order.shipping_complement %} ({{ order.shipping_complement }}){% endif %}<br>
+        {{ order.shipping_city }} - {{ order.shipping_state }}, CEP {{ order.shipping_zipcode }}
+        {% if not forloop.last %}<br>{% endif %}
+        {% endfor %}
+    </p>
+{% endblock %}

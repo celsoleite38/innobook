@@ -27,7 +27,11 @@
                     <p style="font-size:14px; color:#888; margin-bottom:2rem;
                               line-height:1.7;">
                         Obrigado, <strong style="color:#1a1a2e;">{{ order.buyer_name }}</strong>!<br>
+                        {% if order.needs_shipping %}
+                        Seu livro físico será enviado para o endereço informado.
+                        {% else %}
                         Seu eBook está pronto para download.
+                        {% endif %}
                     </p>
 
                     <!-- Detalhes do pedido -->
@@ -43,7 +47,15 @@
                             {{ order.ebook.title }}
                         </p>
                         <div style="font-size:12px; color:#888;">
+                            Formato: <strong style="color:#1a1a2e;">{{ order.get_variant_display }}</strong>
+                            &nbsp;·&nbsp;
                             Valor: <strong style="color:#1a1a2e;">R$ {{ order.amount }}</strong>
+                            {% if order.shipping_cost %}
+                            &nbsp;·&nbsp;
+                            Frete: <strong style="color:#1a1a2e;">R$ {{ order.shipping_cost|floatformat:2 }}</strong>
+                            &nbsp;·&nbsp;
+                            Total: <strong style="color:#1a1a2e;">R$ {{ order.total_with_shipping }}</strong>
+                            {% endif %}
                             &nbsp;·&nbsp;
                             Pedido: <strong style="color:#1a1a2e;">#{{ order.order_id|stringformat:"s"|slice:":8" }}...</strong>
                         </div>

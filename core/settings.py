@@ -148,17 +148,36 @@ ASAAS_URL     = (
 
 ASAAS_WEBHOOK_TOKEN = os.getenv('ASAAS_WEBHOOK_TOKEN', '')
 
+# Melhor Envios
+ME_CLIENT_ID      = os.getenv('ME_CLIENT_ID', '')
+ME_CLIENT_SECRET  = os.getenv('ME_CLIENT_SECRET', '')
+ME_REDIRECT_URI   = os.getenv('ME_REDIRECT_URI', '')
+ME_WEBHOOK_TOKEN  = os.getenv('ME_WEBHOOK_TOKEN', '')
+ME_ENV            = os.getenv('ME_ENV', 'sandbox')  # sandbox | production
+ME_URL            = (
+    'https://sandbox.melhorenvio.com.br'
+    if os.getenv('ME_ENV') == 'sandbox'
+    else 'https://melhorenvio.com.br'
+)
+ME_API_SCOPES = (
+    'shipping-calculate shipping-checkout shipping-generate '
+    'shipping-print shipping-tracking shipping-cancel '
+    'cart-write cart-read orders-read purchases-read'
+)
+
 # Email
 EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST          = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT          = int(os.getenv('EMAIL_PORT', 587))
 EMAIL_USE_TLS       = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_USE_SSL       = os.getenv('EMAIL_USE_SSL', 'False') == 'True'
+EMAIL_TIMEOUT       = int(os.getenv('EMAIL_TIMEOUT', 30))
 EMAIL_HOST_USER     = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL  = os.getenv('DEFAULT_FROM_EMAIL', 'BookHub <noreply@innobook.com.br>')
+DEFAULT_FROM_EMAIL  = os.getenv('DEFAULT_FROM_EMAIL', 'BookHub <noreply@erd.com.br>')
 
-# Em desenvolvimento, mostra emails no terminal
-if DEBUG:
+# Em desenvolvimento, mostra emails no terminal apenas se não houver SMTP configurado
+if DEBUG and not EMAIL_HOST_USER:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # URL pública do site (usada nos e-mails)

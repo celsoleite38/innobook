@@ -79,20 +79,23 @@ def get_or_create_customer(user):
     return customer['id']
 
 
-def create_charge(order, billing_type, ip=None):
+def create_charge(order, billing_type, ip=None, value=None):
     """
     Cria a cobrança no Asaas. NUNCA recebe dados de cartão aqui — para cartão
     de crédito o Asaas devolve `invoiceUrl` (checkout hospedado) e o cliente
     paga na página segura do Asaas.
+
+    `value` (opcional) permite cobrar um total que não é o amount do pedido —
+    usado no carrinho: soma dos produtos + fretes.
     """
     customer_id = get_or_create_customer(order.buyer)
 
     payload = {
         'customer': customer_id,
         'billingType': billing_type,
-        'value': float(order.amount),
+        'value': float(value) if value is not None else float(order.amount),
         'dueDate': _due_date(billing_type),
-        'description': f'BookHub — {order.ebook.title}',
+        'description': f'BookHub — {order.ebook.title} ({order.get_variant_display()})',
         'externalReference': str(order.order_id),
         'postalService': False,
     }
@@ -107,6 +110,25 @@ def create_charge(order, billing_type, ip=None):
         raise Exception(f'Erro ao criar cobrança Asaas: {charge}')
 
     return charge
+
+
+def refund_charge(charge_id, value=None):
+    """
+    Estorna uma cobrança no Asaas. `value` opcional permite estorno parcial
+    (usado no cancelamento de frete físico — o produto + frete voltam juntos).
+    """
+    payload = {}
+    if value is not None:
+        payload['value'] = float(value)
+    response = requests.post(
+        _url(f'/payments/{charge_id}/refund'),
+        headers=_headers(),
+        json=payload,
+    )
+    data = response.json()
+    if response.status_code >= 400:
+        raise Exception(f'Erro ao estornar cobrança: {data}')
+    return data
 
 
 def get_charge(charge_id):

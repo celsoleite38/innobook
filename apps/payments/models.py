@@ -1,6 +1,6 @@
 from django.db import models
 from django.conf import settings
-from apps.products.models import Ebook
+from apps.products.models import Ebook, FORMAT_CHOICES, FORMAT_DIGITAL, FORMAT_PHYSICAL, FORMAT_COMBO
 import uuid
 
 
@@ -36,11 +36,70 @@ class Order(models.Model):
         related_name='orders',
         verbose_name='eBook'
     )
+    variant     = models.CharField(
+        max_length=20,
+        choices=FORMAT_CHOICES,
+        default=FORMAT_DIGITAL,
+        verbose_name='Formato'
+    )
+    shipment = models.ForeignKey(
+        'delivery.Shipment',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='orders',
+        verbose_name='Pacote de envio'
+    )
+
+    # Dados de entrega (livro físico)
+    shipping_name      = models.CharField(max_length=200, blank=True, verbose_name='Destinatário')
+    shipping_zipcode   = models.CharField(max_length=10, blank=True, verbose_name='CEP')
+    shipping_address   = models.CharField(max_length=255, blank=True, verbose_name='Endereço')
+    shipping_number    = models.CharField(max_length=20, blank=True, verbose_name='Número')
+    shipping_district  = models.CharField(max_length=100, blank=True, verbose_name='Bairro')
+    shipping_complement = models.CharField(max_length=255, blank=True, verbose_name='Complemento')
+    shipping_city      = models.CharField(max_length=100, blank=True, verbose_name='Cidade')
+    shipping_state     = models.CharField(max_length=2, blank=True, verbose_name='UF')
+
+    # Status do envio do livro físico
+    SHIPPING_AWAITING  = 'awaiting'
+    SHIPPING_READY     = 'ready'
+    SHIPPING_SHIPPED   = 'shipped'
+    SHIPPING_DELIVERED = 'delivered'
+    SHIPPING_CANCELLED = 'cancelled'
+
+    SHIPPING_STATUS_CHOICES = [
+        (SHIPPING_AWAITING,  'Aguardando envio'),
+        (SHIPPING_READY,     'Aguardando postagem'),
+        (SHIPPING_SHIPPED,   'Enviado'),
+        (SHIPPING_DELIVERED, 'Entregue'),
+        (SHIPPING_CANCELLED, 'Cancelado'),
+    ]
+
+    shipping_status = models.CharField(
+        max_length=20,
+        choices=SHIPPING_STATUS_CHOICES,
+        blank=True, default='',
+        verbose_name='Status do envio'
+    )
+    tracking_code = models.CharField(
+        max_length=50, blank=True,
+        verbose_name='Código de rastreio'
+    )
+    cancel_requested_at = models.DateTimeField(
+        null=True, blank=True,
+        verbose_name='Cancelamento solicitado em'
+    )
+    shipped_at   = models.DateTimeField(null=True, blank=True, verbose_name='Enviado em')
+    delivered_at = models.DateTimeField(null=True, blank=True, verbose_name='Entregue em')
 
     # Valores (salvamos o preço no momento da compra!)
     amount      = models.DecimalField(
         max_digits=8, decimal_places=2,
         verbose_name='Valor pago'
+    )
+    shipping_cost = models.DecimalField(
+        max_digits=8, decimal_places=2, default=0,
+        verbose_name='Frete pago'
     )
     platform_fee = models.DecimalField(
         max_digits=8, decimal_places=2,
@@ -98,6 +157,21 @@ class Order(models.Model):
 
     def is_paid(self):
         return self.status == self.STATUS_PAID
+
+    def needs_shipping(self):
+        return self.variant in (FORMAT_PHYSICAL, FORMAT_COMBO)
+
+    @property
+    def total_with_shipping(self):
+        return (self.amount or 0) + (self.shipping_cost or 0)
+
+    def can_cancel_shipping(self):
+        """Cancelável enquanto o pacote não foi postado."""
+        return (
+            self.variant in (FORMAT_PHYSICAL, FORMAT_COMBO)
+            and self.status == self.STATUS_PAID
+            and self.shipping_status in (self.SHIPPING_AWAITING, '')
+        )
 
     def __str__(self):
         return f'Pedido #{self.order_id} — {self.buyer_name} — {self.get_status_display()}'

@@ -1,0 +1,10 @@
+Olá,
+
+Seu pedido foi entregue com sucesso!
+
+Transportadora: {{ shipment.carrier }}
+Rastreio: {{ shipment.tracking_code|default:"—" }}
+
+Obrigado pela compra! 📚
+
+© Editora Orange — suporte@editoraorange.com.br

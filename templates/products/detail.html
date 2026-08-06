@@ -1,25 +1,69 @@
 {% extends 'base.html' %}
 {% block title %}{{ ebook.title }} — Editora Orange{% endblock %}
 
+{% block extra_css %}
+<style>
+  /* Badges Informativos de Formato */
+  .format-badge {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    user-select: none;
+    transition: all 0.2s ease-in-out;
+    display: inline-block;
+  }
+  .format-badge-pdf {
+    background: #f0f4ff;
+    color: #1a1a6e;
+    border: 0.5px solid #c0c8e8;
+  }
+  .format-badge-epub {
+    background: #f0fff4;
+    color: #1a5e2e;
+    border: 0.5px solid #b8d8c0;
+  }
+  .format-badge:hover {
+    transform: translateY(-1px);
+    opacity: 0.9;
+  }
+
+  /* Estilização Interativa dos Seretores Radio de Formato */
+  .format-selector-label {
+    border: 0.5px solid #e0d8cc;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    font-size: 11px;
+    background-color: #ffffff;
+  }
+  .format-selector-label:hover {
+    border-color: #c9a84c;
+    background-color: #fdfcf9;
+  }
+  /* Estado ativo/selecionado via Bootstrap .btn-check */
+  .btn-check:checked + .format-selector-label {
+    border-color: #c9a84c !important;
+    background-color: #ebe59780 !important;
+    box-shadow: 0 0 0 1px #c9a84c;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 
 <!-- Header -->
 <section style="background:#1a1a2e; padding:32px 0;">
     <div class="container">
         <nav style="font-size:12px; color:#888; margin-bottom:8px;">
-            <a href="{% url 'products:home' %}"
-               style="color:#c9a84c; text-decoration:none;">Início</a>
+            <a href="{% url 'products:home' %}" style="color:#c9a84c; text-decoration:none;">Início</a>
             <span class="mx-2">›</span>
-            <a href="{% url 'products:list' %}"
-               style="color:#888; text-decoration:none;">Catálogo</a>
+            <a href="{% url 'products:list' %}" style="color:#888; text-decoration:none;">Catálogo</a>
             {% if ebook.category %}
             <span class="mx-2">›</span>
-            <a href="{% url 'products:category' ebook.category.slug %}"
-               style="color:#888; text-decoration:none;">{{ ebook.category.name }}</a>
+            <a href="{% url 'products:category' ebook.category.slug %}" style="color:#888; text-decoration:none;">{{ ebook.category.name }}</a>
             {% endif %}
         </nav>
-        <h1 style="font-family:'Playfair Display',serif; color:#f5f0e8;
-                   font-size:30px; font-weight:600; margin:0;">
+        <h1 style="font-family:'Playfair Display',serif; color:#f5f0e8; font-size:30px; font-weight:600; margin:0;">
             {{ ebook.title }}
         </h1>
     </div>
@@ -35,13 +79,10 @@
                 {% if ebook.cover %}
                 <img src="{{ ebook.cover.url }}"
                      class="img-fluid"
-                     style="border-radius:6px; box-shadow:0 12px 40px rgba(26,26,46,0.2);
-                            max-height:440px; object-fit:cover; width:100%;"
+                     style="border-radius:6px; box-shadow:0 12px 40px rgba(26,26,46,0.2); max-height:440px; object-fit:cover; width:100%;"
                      alt="{{ ebook.title }}">
                 {% else %}
-                <div style="background:#1a1a2e; border-radius:6px; height:400px;
-                            display:flex; align-items:center; justify-content:center;
-                            font-size:6rem;">
+                <div style="background:#1a1a2e; border-radius:6px; height:400px; display:flex; align-items:center; justify-content:center; font-size:6rem;">
                     📚
                 </div>
                 {% endif %}
@@ -58,14 +99,12 @@
             <!-- Detalhes -->
             <div class="col-md-8">
                 {% if ebook.category %}
-                <p style="color:#c9a84c; font-size:11px; letter-spacing:2px;
-                          text-transform:uppercase; margin-bottom:8px;">
+                <p style="color:#c9a84c; font-size:11px; letter-spacing:2px; text-transform:uppercase; margin-bottom:8px;">
                     {{ ebook.category.name }}
                 </p>
                 {% endif %}
 
-                <h2 style="font-family:'Playfair Display',serif; font-size:32px;
-                           font-weight:600; margin-bottom:6px; color:#1a1a2e;">
+                <h2 style="font-family:'Playfair Display',serif; font-size:32px; font-weight:600; margin-bottom:6px; color:#1a1a2e;">
                     {{ ebook.title }}
                 </h2>
                 <p style="color:#888; font-size:14px; margin-bottom:20px;">
@@ -76,8 +115,7 @@
 
                 <!-- Metadados -->
                 <div class="d-flex gap-4 mb-4"
-                     style="font-size:13px; color:#888; border-top:0.5px solid #e0d8cc;
-                            border-bottom:0.5px solid #e0d8cc; padding:12px 0;">
+                     style="font-size:13px; color:#888; border-top:0.5px solid #e0d8cc; border-bottom:0.5px solid #e0d8cc; padding:12px 0;">
                     {% if ebook.pages %}
                     <span><i class="bi bi-file-text me-1 text-gold"></i>{{ ebook.pages }} páginas</span>
                     {% endif %}
@@ -91,48 +129,38 @@
                     {{ ebook.description }}
                 </p>
 
-
                 <!-- Formatos disponíveis -->
-                <div class="d-flex gap-2 flex-wrap mb-4">
-                    <span style="font-size:11px; color:#888; letter-spacing:1px;
-                                text-transform:uppercase; margin-right:4px;">
+                <div class="d-flex gap-2 flex-wrap mb-4 align-items-center">
+                    <span style="font-size:11px; color:#888; letter-spacing:1px; text-transform:uppercase; margin-right:4px;">
                         Formatos:
                     </span>
-                    <span style="background:#f0f4ff; color:#1a1a6e; font-size:11px;
-                                padding:3px 10px; border-radius:20px; border:0.5px solid #c0c8e8;">
+                    <span class="format-badge format-badge-pdf">
                         PDF-HTML
                     </span>
                     {% if ebook.file_epub %}
-                    <span style="background:#f0fff4; color:#1a5e2e; font-size:11px;
-                                padding:3px 10px; border-radius:20px; border:0.5px solid #b8d8c0;">
-                        EPUB
+                    <span class="format-badge format-badge-epub">
+                        EPUB - kindle
                     </span>
                     {% endif %}
-                    {% if ebook.file_mobi %}
-                    <span style="background:#fff8f0; color:#8a4a00; font-size:11px;
-                                padding:3px 10px; border-radius:20px; border:0.5px solid #e8d0b0;">
-                        MOBI — Kindle
+                    {% if ebook.has_physical %}
+                    <span class="format-badge format-badge-pdf">
+                        📖 Livro Físico
                     </span>
                     {% endif %}
                 </div>
 
                 <!-- Bônus inclusos -->
                 {% if ebook.bonuses.all %}
-                <div style="background:#f9f6f0; border:0.5px solid #e0d8cc; border-radius:6px;
-                            padding:1rem; margin-bottom:1.5rem;">
-                    <p style="font-size:11px; letter-spacing:2px; text-transform:uppercase;
-                            color:#c9a84c; margin-bottom:12px;">
+                <div style="background:#f9f6f0; border:0.5px solid #e0d8cc; border-radius:6px; padding:1rem; margin-bottom:1.5rem;">
+                    <p style="font-size:11px; letter-spacing:2px; text-transform:uppercase; color:#c9a84c; margin-bottom:12px;">
                         🎁 Bônus inclusos nesta compra
                     </p>
                     {% for bonus in ebook.bonuses.all %}
                     <div class="d-flex align-items-center gap-3 mb-2">
                         {% if bonus.cover %}
-                        <img src="{{ bonus.cover.url }}" width="36" height="48"
-                            style="object-fit:cover; border-radius:3px; flex-shrink:0;">
+                        <img src="{{ bonus.cover.url }}" width="36" height="48" style="object-fit:cover; border-radius:3px; flex-shrink:0;">
                         {% else %}
-                        <div style="width:36px; height:48px; background:#1a1a2e; border-radius:3px;
-                                    display:flex; align-items:center; justify-content:center;
-                                    font-size:1rem; flex-shrink:0;">🎁</div>
+                        <div style="width:36px; height:48px; background:#1a1a2e; border-radius:3px; display:flex; align-items:center; justify-content:center; font-size:1rem; flex-shrink:0;">🎁</div>
                         {% endif %}
                         <div>
                             <p style="font-size:13px; font-weight:600; color:#1a1a2e; margin-bottom:2px;">
@@ -140,9 +168,7 @@
                             </p>
                             <div class="d-flex gap-1">
                                 {% for fmt in bonus.get_available_formats %}
-                                <span style="font-size:9px; color:#888; background:#fff;
-                                            padding:1px 6px; border-radius:10px;
-                                            border:0.5px solid #d0c8bc;">
+                                <span style="font-size:9px; color:#888; background:#fff; padding:1px 6px; border-radius:10px; border:0.5px solid #d0c8bc;">
                                     {{ fmt }}
                                 </span>
                                 {% endfor %}
@@ -153,68 +179,109 @@
                 </div>
                 {% endif %}
 
-
                 <!-- Box de compra -->
-                <div style="background:#fff; border:0.5px solid #e0d8cc;
-                            border-radius:6px; padding:1.5rem;">
+                <div style="background:#fff; border:0.5px solid #e0d8cc; border-radius:6px; padding:1.5rem;">
 
                     <div class="d-flex align-items-baseline gap-3 mb-4">
-                        <span style="font-family:'Playfair Display',serif;
-                                     font-size:36px; color:#c9a84c; font-weight:600;">
+                        <span id="price-label" style="font-family:'Playfair Display',serif; font-size:36px; color:#c9a84c; font-weight:600;">
                             R$ {{ ebook.get_price }}
                         </span>
                         {% if ebook.discount_price %}
-                        <span style="font-size:18px; color:#aaa;
-                                     text-decoration:line-through;">
+                        <span style="font-size:18px; color:#aaa; text-decoration:line-through;">
                             R$ {{ ebook.price }}
                         </span>
-                        <span style="background:#8b2020; color:#fff; font-size:10px;
-                                     padding:3px 10px; border-radius:2px; letter-spacing:1px;
-                                     text-transform:uppercase;">
+                        <span style="background:#8b2020; color:#fff; font-size:10px; padding:3px 10px; border-radius:2px; letter-spacing:1px; text-transform:uppercase;">
                             Promoção
                         </span>
                         {% endif %}
                     </div>
 
+                    {% if ebook.has_physical %}
+                    <!-- Seletor de formato -->
+                    <div class="mb-4">
+                        <p style="font-size:11px; letter-spacing:2px; text-transform:uppercase; color:#c9a84c; margin-bottom:10px;">
+                            Escolha o formato
+                        </p>
+                        <div class="row g-2">
+                            <div class="col-4">
+                                <input type="radio" class="btn-check" name="format"
+                                       id="fmt-digital" value="digital" checked
+                                       data-price="{{ ebook.get_price }}">
+                                <label class="d-block text-center p-2 format-selector-label" for="fmt-digital">
+                                    <i class="bi bi-file-earmark-text d-block mb-1 text-gold" style="font-size:32px;"></i>
+                                    Digital
+                                    <br>
+                                    <strong>R$ {{ ebook.get_price }}</strong>
+                                </label>
+                            </div>
+                            <div class="col-4">
+                                <input type="radio" class="btn-check" name="format"
+                                       id="fmt-physical" value="physical"
+                                       data-price="{{ ebook.physical_price }}">
+                                <label class="d-block text-center p-2 format-selector-label" for="fmt-physical">
+                                    <i class="bi bi-book d-block mb-1 text-gold" style="font-size:32px;"></i>
+                                    Físico
+                                    <br>
+                                    <strong>R$ {{ ebook.physical_price }}</strong>
+                                </label>
+                            </div>
+                            <div class="col-4">
+                                <input type="radio" class="btn-check" name="format"
+                                       id="fmt-combo" value="combo"
+                                       data-price="{{ ebook.get_combo_price }}">
+                                <label class="d-block text-center p-2 format-selector-label" for="fmt-combo">
+                                    <i class="bi bi-collection d-block mb-1 text-gold" style="font-size:32px;"></i>
+                                    Físico + Digital
+                                    <br>
+                                    <strong>R$ {{ ebook.get_combo_price }}</strong>
+                                </label>
+                            </div>
+                        </div>
+                        {% if ebook.physical_stock <= 5 %}
+                        <p style="font-size:11px; color:#8a6000; margin-top:8px; margin-bottom:0;">
+                            ⚠️ Restam apenas {{ ebook.physical_stock }} exemplar(es) físico(s) em estoque.
+                        </p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
                     {% if already_bought %}
-                    <div class="alert alert-success mb-3"
-                         style="font-size:13px; border-left:3px solid #2d5a2d;">
+                    <div class="alert alert-success mb-3" style="font-size:13px; border-left:3px solid #2d5a2d;">
                         <i class="bi bi-check-circle me-2"></i>
                         Você já possui este eBook!
                     </div>
                     {% if download_token and download_token.is_valid %}
-                    <a href="{% url 'delivery:download' download_token.token %}"
-                       class="btn-gold d-block text-center">
+                    <a href="{% url 'delivery:download' download_token.token %}" class="btn-gold d-block text-center">
                         <i class="bi bi-download me-2"></i>Baixar agora
                     </a>
                     {% endif %}
 
                     {% else %}
                     {% if user.is_authenticated %}
-                    <a href="{% url 'payments:checkout' ebook.id %}"
-                       class="btn-navy d-block text-center"
-                       style="padding:14px; font-size:12px;">
-                        <i class="bi bi-bag me-2"></i>Comprar agora
-                    </a>
-                    {% if not already_bought %}
-                    <a href="{% url 'cart:add' ebook.id %}"
-                        class="btn-outline-gold d-block text-center mt-2"
-                        style="padding:12px; font-size:12px;">
+                    <form method="get" action="{% url 'payments:checkout' ebook.id %}">
+                        <input type="hidden" name="variant" id="variant-buy" value="digital">
+                        <button type="submit" class="btn-navy d-block text-center w-100" style="padding:14px; font-size:12px; border:none;">
+                            <i class="bi bi-bag me-2"></i>Comprar agora
+                        </button>
+                    </form>
+                    <form method="get" action="{% url 'cart:add' ebook.id %}">
+                        <input type="hidden" name="variant" id="variant-cart" value="digital">
+                        <button type="submit" class="btn-outline-gold d-block text-center w-100 mt-2" style="padding:12px; font-size:12px; border:1px solid var(--gold);">
                             <i class="bi bi-bag-plus me-2"></i>Adicionar ao carrinho
-                    </a>
-                    {% endif %}
+                        </button>
+                    </form>
                     {% else %}
-                    <a href="{% url 'accounts:login' %}?next={% url 'payments:checkout' ebook.id %}"
-                       class="btn-navy d-block text-center"
-                       style="padding:14px; font-size:12px;">
-                        <i class="bi bi-bag me-2"></i>Comprar agora
-                    </a>
+                    <form method="get" action="{% url 'accounts:login' %}">
+                        <input type="hidden" name="next" id="next-guest" value="{% url 'payments:checkout' ebook.id %}">
+                        <button type="submit" class="btn-navy d-block text-center w-100" style="padding:14px; font-size:12px; border:none;">
+                            <i class="bi bi-bag me-2"></i>Comprar agora
+                        </button>
+                    </form>
                     {% endif %}
                     {% endif %}
 
                     <!-- Garantias -->
-                    <div class="d-flex justify-content-center gap-4 mt-3"
-                         style="font-size:11px; color:#aaa; letter-spacing:0.3px;">
+                    <div class="d-flex justify-content-center gap-4 mt-3" style="font-size:11px; color:#aaa; letter-spacing:0.3px;">
                         <span><i class="bi bi-shield-check me-1 text-gold"></i>Compra segura</span>
                         <span><i class="bi bi-infinity me-1 text-gold"></i>Acesso vitalício</span>
                         <span><i class="bi bi-lightning me-1 text-gold"></i>Download imediato</span>
@@ -225,8 +292,7 @@
 
         <!-- Relacionados -->
         {% if related %}
-        <div class="mt-5 pt-4"
-             style="border-top:0.5px solid #d0c8bc;">
+        <div class="mt-5 pt-4" style="border-top:0.5px solid #d0c8bc;">
             <p class="section-label">Você também pode gostar</p>
             <div class="elegant-divider">
                 <h3 class="section-title mb-0" style="font-size:22px;">
@@ -238,8 +304,7 @@
                 <div class="col-sm-6 col-md-3">
                     <div class="ebook-card">
                         {% if item.cover %}
-                        <img src="{{ item.cover.url }}"
-                             class="ebook-card-img" alt="{{ item.title }}">
+                        <img src="{{ item.cover.url }}" class="ebook-card-img" alt="{{ item.title }}">
                         {% else %}
                         <div class="ebook-card-img-placeholder">📚</div>
                         {% endif %}
@@ -250,10 +315,8 @@
                             </div>
                             <div class="d-flex align-items-center justify-content-between">
                                 <span class="ebook-price">R$ {{ item.get_price }}</span>
-                                <a href="{% url 'products:detail' item.slug %}"
-                                   class="btn-navy"
-                                   style="padding:5px 14px; font-size:10px;">
-                                   Ver
+                                <a href="{% url 'products:detail' item.slug %}" class="btn-navy" style="padding:5px 14px; font-size:10px;">
+                                    Ver
                                 </a>
                             </div>
                         </div>
@@ -265,4 +328,36 @@
         {% endif %}
     </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+{% if ebook.has_physical %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const radios = document.querySelectorAll('input[name="format"]');
+    const priceLabel = document.getElementById('price-label');
+
+    function updateFormat() {
+        const checked = document.querySelector('input[name="format"]:checked');
+        if (!checked) return;
+        const v = checked.value;
+        const price = checked.dataset.price;
+
+        if (priceLabel) {
+            priceLabel.textContent = price ? ('R$ ' + price) : '—';
+        }
+        const buy = document.getElementById('variant-buy');
+        if (buy) buy.value = v;
+        const cart = document.getElementById('variant-cart');
+        if (cart) cart.value = v;
+        const next = document.getElementById('next-guest');
+        if (next) {
+            next.value = "{% url 'payments:checkout' ebook.id %}?variant=" + v;
+        }
+    }
+
+    radios.forEach(r => r.addEventListener('change', updateFormat));
+});
+</script>
+{% endif %}
 {% endblock %}

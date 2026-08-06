@@ -1,20 +1,25 @@
 {% extends 'base.html' %}
 {% block title %}Painel do Escritor — Editora Orange{% endblock %}
-
+{% load static %}
 {% block content %}
 <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="fw-bold">
-            <i class="bi bi-bar-chart text-primary"></i> Painel do Escritor
+            <img src="{% static 'images/logoorange.png' %}" alt="logo" style="height:90px; vertical-align: middle; border-radius: 18px;">
+             Painel do Escritor
         </h2>
         
         <div class="d-flex gap-2">
             <a href="{% url 'accounts:financial' %}" class="btn-outline-gold"
-            style="padding:8px 18px; font-size:11px;">
-                <i class="bi bi-cash-coin me-1"></i>Financeiro
+            style="padding:8px 22px; font-size:11px;">
+                <i class="bi bi-cash-coin me-1"></i> Financeiro
+            </a>
+            <a href="{% url 'delivery:shipping_panel' %}" class="btn-outline-gold"
+            style="padding:8px 22px; font-size:11px;">
+                <i class="bi bi-box-seam me-1"></i>Meus Envios
             </a>
             <a href="{% url 'accounts:ebook_create' %}" class="btn-gold"
-            style="padding:8px 20px; font-size:11px;">
+            style="padding:8px 22px; font-size:11px;">
                 <i class="bi bi-plus-lg me-1"></i>Novo eBook
             </a>
         </div>
@@ -117,11 +122,11 @@
                     <small class="text-muted">R$ {{ ebook.price }}</small>
                 </div>
                 <div class="d-flex flex-column gap-1">
-                    <a href="{% url 'accounts:ebook_edit' ebook.pk %}"
+                    <a href="{% url 'accounts:ebook_edit' ebook.pk %}" class="btn-outline-gold"
                        class="btn btn-outline-primary btn-sm">
                         <i class="bi bi-pencil">Editar</i>
                     </a>
-                    <a href="{% url 'accounts:ebook_bonuses' ebook.pk %}"
+                    <a href="{% url 'accounts:ebook_bonuses' ebook.pk %}" class="btn-gold"
                         class="btn btn-outline-secondary btn-sm"
                         title="Gerenciar bônus">
                         <i class="bi bi-gift">Bônus</i>
@@ -130,9 +135,9 @@
                         {% endwith %}
                     </a>
                     {% if ebook.is_published %}
-                    <a href="{% url 'products:detail' ebook.slug %}"
-                       class="btn btn-outline-secondary btn-sm" target="_blank">
-                        <i class="bi bi-eye"></i>
+                    <a href="{% url 'products:detail' ebook.slug %}" class="btn-outline-gold"
+                       class="btn btn-outline-secondary btn-sm" target="_blank"> 
+                        <i class="bi bi-eye">Ver livro</i>
                     </a>
                     {% endif %}
                 </div>

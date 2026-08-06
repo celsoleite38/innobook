@@ -1,0 +1,19 @@
+Olá,
+
+Seu livro físico foi postado e já está a caminho!
+
+Transportadora: {{ shipment.carrier }}
+Rastreio: {{ shipment.tracking_code|default:"—" }}
+Prazo estimado: {{ shipment.delivery_time|default:"—" }} dia(s) útil(eis)
+{% if shipment.tracking_url %}
+Acompanhe: {{ shipment.tracking_url }}
+{% endif %}
+
+Endereço de entrega:
+{% for order in shipment.orders.all %}
+{{ order.shipping_name }}
+{{ order.shipping_address }}, {{ order.shipping_number }}{% if order.shipping_district %} — {{ order.shipping_district }}{% endif %}{% if order.shipping_complement %} ({{ order.shipping_complement }}){% endif %}
+{{ order.shipping_city }} - {{ order.shipping_state }}, CEP {{ order.shipping_zipcode }}
+{% endfor %}
+
+© Editora Orange — suporte@editoraorange.com.br

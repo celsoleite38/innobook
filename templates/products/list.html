@@ -77,6 +77,10 @@
                         <span class="badge-gold position-absolute"
                               style="top:10px; left:10px;">Destaque</span>
                         {% endif %}
+                        {% if ebook.has_physical %}
+                        <span class="badge-gold position-absolute"
+                              style="bottom:10px; left:10px; background:#1a1a6e;">Físico</span>
+                        {% endif %}
                     </div>
                     <div class="ebook-card-body">
                         {% if ebook.category %}

@@ -5,7 +5,8 @@ from django.conf import settings
 
 def send_purchase_confirmation(order, token):
     """
-    Envia email de confirmação de compra com link de download.
+    Envia email de confirmação de compra com link de download
+    (apenas quando o pedido inclui a versão digital).
     """
     subject = f'✅ Compra confirmada — {order.ebook.title}'
 
@@ -62,6 +63,84 @@ def send_pending_order_reminder(order):
         message        = plain_message,
         from_email     = settings.DEFAULT_FROM_EMAIL,
         recipient_list = [order.buyer_email],
+        html_message   = html_message,
+        fail_silently  = True,
+    )
+
+
+def send_shipped_notification(shipment):
+    """Avisa o comprador que o pacote foi postado (com rastreio)."""
+    buyers = set()
+    for order in shipment.orders.all():
+        if order.buyer_email:
+            buyers.add(order.buyer_email)
+
+    if not buyers:
+        return
+
+    subject = f'📦 Seu pedido foi enviado — {shipment.carrier or "livro físico"}'
+    context = {'shipment': shipment, 'site_url': settings.SITE_URL}
+
+    html_message  = render_to_string('emails/shipped.html', context)
+    plain_message = render_to_string('emails/shipped.txt', context)
+
+    send_mail(
+        subject        = subject,
+        message        = plain_message,
+        from_email     = settings.DEFAULT_FROM_EMAIL,
+        recipient_list = list(buyers),
+        html_message   = html_message,
+        fail_silently  = True,
+    )
+
+
+def send_delivered_notification(shipment):
+    """Avisa o comprador que o pacote foi entregue."""
+    buyers = set()
+    for order in shipment.orders.all():
+        if order.buyer_email:
+            buyers.add(order.buyer_email)
+
+    if not buyers:
+        return
+
+    subject = f'✅ Entrega confirmada — {shipment.carrier or "livro físico"}'
+    context = {'shipment': shipment, 'site_url': settings.SITE_URL}
+
+    html_message  = render_to_string('emails/delivered.html', context)
+    plain_message = render_to_string('emails/delivered.txt', context)
+
+    send_mail(
+        subject        = subject,
+        message        = plain_message,
+        from_email     = settings.DEFAULT_FROM_EMAIL,
+        recipient_list = list(buyers),
+        html_message   = html_message,
+        fail_silently  = True,
+    )
+
+
+def send_cancelled_notification(shipment):
+    """Avisa o comprador que o pedido foi cancelado e estornado."""
+    buyers = set()
+    for order in shipment.orders.all():
+        if order.buyer_email:
+            buyers.add(order.buyer_email)
+
+    if not buyers:
+        return
+
+    subject = f'↩️ Pedido cancelado — reembolso em andamento'
+    context = {'shipment': shipment, 'site_url': settings.SITE_URL}
+
+    html_message  = render_to_string('emails/cancelled.html', context)
+    plain_message = render_to_string('emails/cancelled.txt', context)
+
+    send_mail(
+        subject        = subject,
+        message        = plain_message,
+        from_email     = settings.DEFAULT_FROM_EMAIL,
+        recipient_list = list(buyers),
         html_message   = html_message,
         fail_silently  = True,
     )

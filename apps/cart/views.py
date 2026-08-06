@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
-from apps.products.models import Ebook
+from apps.products.models import Ebook, FORMAT_DIGITAL, FORMAT_PHYSICAL, FORMAT_COMBO
 from apps.payments.models import Order
 from .models import Cart, CartItem
 
@@ -17,15 +17,21 @@ def cart_view(request):
     cart  = get_or_create_cart(request.user)
     items = cart.items.select_related('ebook').all()
 
-    # Filtra itens já comprados
-    paid_ebook_ids = request.user.orders.filter(
-        status='paid'
-    ).values_list('ebook_id', flat=True)
+    # Itens já comprados (por formato)
+    paid_items = []
+    for item in items:
+        if item.ebook.user_owns_format(request.user, item.variant):
+            paid_items.append(item.id)
+
+    payable_total = sum(
+        item.price for item in items if item.id not in paid_items
+    )
 
     return render(request, 'cart/cart.html', {
         'cart'          : cart,
         'items'         : items,
-        'paid_ebook_ids': list(paid_ebook_ids),
+        'paid_items'    : paid_items,
+        'payable_total' : payable_total,
     })
 
 
@@ -33,16 +39,29 @@ def cart_view(request):
 def add_to_cart(request, ebook_id):
     ebook = get_object_or_404(Ebook, id=ebook_id, status='published')
 
-    # Já comprou?
-    if request.user.orders.filter(ebook=ebook, status='paid').exists():
-        messages.info(request, 'Você já possui este eBook!')
+    variant = request.GET.get('variant', FORMAT_DIGITAL)
+    if variant not in (FORMAT_DIGITAL, FORMAT_PHYSICAL, FORMAT_COMBO):
+        variant = FORMAT_DIGITAL
+
+    if variant in (FORMAT_PHYSICAL, FORMAT_COMBO) and not ebook.has_physical():
+        messages.warning(request, 'A versão física deste livro está esgotada.')
+        return redirect('products:detail', slug=ebook.slug)
+
+    # Já comprou esse formato?
+    if ebook.user_owns_format(request.user, variant):
+        messages.info(request, 'Você já possui esta versão deste eBook!')
         return redirect('products:detail', slug=ebook.slug)
 
     cart = get_or_create_cart(request.user)
-    item, created = CartItem.objects.get_or_create(cart=cart, ebook=ebook)
+    item, created = CartItem.objects.get_or_create(
+        cart=cart, ebook=ebook, variant=variant
+    )
 
     if created:
-        messages.success(request, f'"{ebook.title}" adicionado ao carrinho!')
+        messages.success(
+            request,
+            f'"{ebook.title}" ({item.get_variant_display()}) adicionado ao carrinho!'
+        )
     else:
         messages.info(request, f'"{ebook.title}" já está no seu carrinho.')
 

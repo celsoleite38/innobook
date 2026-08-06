@@ -1,14 +1,23 @@
-BookHub — Compra confirmada!
+Editora Orange — Compra confirmada!
 
 Olá, {{ order.buyer_name }}!
 
 Sua compra foi confirmada. Aqui estão os detalhes:
 
 Produto : {{ order.ebook.title }}
+Formato : {{ order.get_variant_display }}
 Valor   : R$ {{ order.amount }}
 Pedido  : #{{ order.order_id }}
-
+{% if order.needs_shipping %}
+Entrega :
+{{ order.shipping_name }}
+{{ order.shipping_address }}, {{ order.shipping_number }}
+{{ order.shipping_city }} - {{ order.shipping_state }}, CEP {{ order.shipping_zipcode }}
+{% endif %}
+{% if token %}
 Acesse seu dashboard para baixar o eBook:
 {{ site_url }}/accounts/dashboard/
-
-Obrigado por comprar na BookHub!
+{% else %}
+Seu livro físico será enviado para o endereço informado.
+{% endif %}
+Obrigado por comprar na Editora Orange!

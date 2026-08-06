@@ -1,0 +1,17 @@
+{% extends 'emails/base_email.html' %}
+
+{% block email_subtitle %}Entrega confirmada!{% endblock %}
+
+{% block email_body %}
+    <h2>Seu pedido chegou!</h2>
+    <p>O pacote com seus livros foi entregue com sucesso.</p>
+
+    <div class="box">
+        <strong>Transportadora:</strong> {{ shipment.carrier }}<br>
+        <strong>Rastreio:</strong> {{ shipment.tracking_code|default:"—" }}
+    </div>
+
+    <p class="muted">
+        Obrigado pela compra! Esperamos que você aproveite suas leituras.
+    </p>
+{% endblock %}

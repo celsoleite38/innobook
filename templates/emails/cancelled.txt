@@ -1,0 +1,11 @@
+Olá,
+
+Seu pedido foi cancelado e o valor pago está sendo devolvido.
+
+{% for order in shipment.orders.all %}
+{{ order.ebook.title }} — R$ {{ order.amount }}{% if order.shipping_cost %} + frete R$ {{ order.shipping_cost }}{% endif %} (Pedido #{{ order.order_id }})
+{% endfor %}
+
+O reembolso pode levar de 1 a 5 dias úteis, conforme o banco/bandeira.
+
+© Editora Orange — suporte@editoraorange.com.br

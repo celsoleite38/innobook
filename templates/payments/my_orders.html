@@ -44,6 +44,8 @@
                             {{ order.ebook.title }}
                         </p>
                         <p style="font-size:12px; color:#888; margin-bottom:0;">
+                            {{ order.get_variant_display }}
+                            &nbsp;·&nbsp;
                             Criado em {{ order.created_at|date:"d/m/Y H:i" }}
                             &nbsp;·&nbsp; R$ {{ order.amount }}
                         </p>
@@ -92,9 +94,51 @@
                             {{ order.ebook.title }}
                         </p>
                         <p style="font-size:12px; color:#888; margin-bottom:0;">
+                            {{ order.get_variant_display }}
+                            &nbsp;·&nbsp;
                             Pago em {{ order.paid_at|date:"d/m/Y H:i" }}
                             &nbsp;·&nbsp; R$ {{ order.amount }}
+                            {% if order.shipping_cost %}
+                            <br>+ Frete: R$ {{ order.shipping_cost|floatformat:2 }}
+                            {% endif %}
                         </p>
+
+                        {% if order.needs_shipping %}
+                        <p style="font-size:12px; margin-bottom:0; margin-top:4px;">
+                            {% if order.shipping_status == 'shipped' %}
+                            <span style="color:#1a6e8a;">
+                                <i class="bi bi-truck"></i> Enviado
+                                {% if order.tracking_code %}
+                                — Código: <strong>{{ order.tracking_code }}</strong>
+                                {% endif %}
+                            </span>
+                            {% elif order.shipping_status == 'delivered' %}
+                            <span style="color:#2d5a2d;">
+                                <i class="bi bi-check-circle"></i> Entregue
+                            </span>
+                            {% elif order.shipping_status == 'cancelled' %}
+                            <span style="color:#8b2020;">
+                                <i class="bi bi-x-circle"></i> Envio cancelado
+                            </span>
+                            {% elif order.shipping_status == 'ready' %}
+                            <span style="color:#1a4a8a;">
+                                <i class="bi bi-printer"></i> Etiqueta gerada —
+                                aguardando postagem do escritor
+                            </span>
+                            {% else %}
+                            <span style="color:#8a6000;">
+                                <i class="bi bi-hourglass-split"></i> Aguardando envio
+                            </span>
+                            {% endif %}
+
+                            {% if order.tracking_code and order.shipment.tracking_url %}
+                            <a href="{{ order.shipment.tracking_url }}" target="_blank"
+                               style="margin-left:8px;">
+                                🔎 Rastrear
+                            </a>
+                            {% endif %}
+                        </p>
+                        {% endif %}
                     </div>
                     <div class="d-flex flex-column gap-2 flex-shrink-0 align-items-end">
                         <span style="background:#f0f7f0; color:#2d5a2d; font-size:10px;
@@ -111,6 +155,19 @@
                         </a>
                         {% endif %}
                         {% endfor %}
+
+                        {% if order.can_cancel_shipping %}
+                        <form method="post"
+                              action="{% url 'payments:order_cancel_shipping' order.order_id %}"
+                              onsubmit="return confirm('Cancelar este pedido e receber o reembolso de R$ {{ order.total_with_shipping }}?');">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    class="btn-outline-gold text-center"
+                                    style="padding:5px 14px; font-size:10px;">
+                                Cancelar pedido
+                            </button>
+                        </form>
+                        {% endif %}
                     </div>
                 </div>
             </div>

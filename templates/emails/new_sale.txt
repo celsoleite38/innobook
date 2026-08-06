@@ -1,4 +1,4 @@
-BookHub — Nova venda!
+Editora Orange — Nova venda!
 
 Olá, {{ order.ebook.author.first_name }}!
 

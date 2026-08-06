@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404
-from .models import Ebook, Category
+from .models import Ebook, Category, FORMAT_DIGITAL, FORMAT_COMBO
 
 
 def home_view(request):
@@ -44,12 +44,14 @@ def ebook_list_view(request):
 def ebook_detail_view(request, slug):
     ebook = get_object_or_404(Ebook, slug=slug, status='published')
 
-    # Verifica se o usuário já comprou
+    # Verifica se o usuário já comprou a versão digital
     already_bought = False
     download_token = None
     if request.user.is_authenticated:
         order = request.user.orders.filter(
-            ebook=ebook, status='paid'
+            ebook=ebook,
+            status='paid',
+            variant__in=[FORMAT_DIGITAL, FORMAT_COMBO]
         ).first()
         if order:
             already_bought = True

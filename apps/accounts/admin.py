@@ -39,9 +39,9 @@ class CustomUserAdmin(UserAdmin):
 
     @admin.display(description='Tipo')
     def role_badge(self, obj):
-        from django.utils.html import format_html
+        from django.utils.html import mark_safe
         if obj.role == 'producer':
-            return format_html('<span style="color:#a07830;">Escritor</span>')
+            return mark_safe('<span style="color:#a07830;">Escritor</span>')
         return 'Comprador'
 
     @admin.action(description='Aprovar como produtor')

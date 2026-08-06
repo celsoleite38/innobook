@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}Endereço de Remetente — Editora Orange{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold">
+            <i class="bi bi-geo-alt text-primary"></i> Endereço de Remetente
+        </h2>
+        <a href="{% url 'delivery:shipping_panel' %}" class="btn-outline-gold"
+           style="padding:8px 18px; font-size:11px;">
+            <i class="bi bi-arrow-left me-1"></i>Voltar aos Envios
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div style="background:#fff; border:0.5px solid #e0d8cc;
+                        border-radius:6px; padding:1.5rem;">
+                <p style="font-size:11px; letter-spacing:2px; text-transform:uppercase;
+                          color:#c9a84c; margin-bottom:16px;">
+                    Dados do remetente (usado nas etiquetas)
+                </p>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                        <div style="color:#b00; font-size:12px; margin-top:4px;">
+                            {{ field.errors|striptags }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+
+                    <button type="submit" class="btn-gold w-100"
+                            style="padding:12px; font-size:12px; border-radius:4px;">
+                        <i class="bi bi-check2 me-1"></i>Salvar endereço
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

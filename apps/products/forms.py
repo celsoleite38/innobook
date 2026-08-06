@@ -9,7 +9,10 @@ class EbookForm(forms.ModelForm):
         fields = [
             'title', 'description', 'category',
             'cover', 'file', 'file_epub', 'file_mobi',
-            'preview', 'price', 'discount_price',
+            'preview',             'price', 'discount_price',
+            'physical_price', 'combo_price', 'physical_stock',
+            'physical_weight_g', 'physical_length_cm',
+            'physical_width_cm', 'physical_height_cm',
             'pages', 'language',
         ]
         widgets = {
@@ -23,6 +26,13 @@ class EbookForm(forms.ModelForm):
             'preview'       : forms.FileInput(attrs={'class': 'form-control'}),
             'price'         : forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'discount_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'physical_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'combo_price'   : forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'physical_stock': forms.NumberInput(attrs={'class': 'form-control'}),
+            'physical_weight_g': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+            'physical_length_cm': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'physical_width_cm': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'physical_height_cm': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
             'pages'         : forms.NumberInput(attrs={'class': 'form-control'}),
             'language'      : forms.TextInput(attrs={'class': 'form-control'}),
         }

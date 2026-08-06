@@ -1,41 +1,18 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <style>
-        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
-        .container { max-width: 600px; margin: 30px auto; background: #fff; border-radius: 8px; overflow: hidden; }
-        .header { background: linear-gradient(135deg, #6c63ff, #ff6584); padding: 30px; text-align: center; }
-        .header h1 { color: #fff; margin: 0; font-size: 24px; }
-        .body { padding: 30px; }
-        .code { background: #f8f9fa; border: 2px dashed #6c63ff; border-radius: 8px;
-                padding: 20px; text-align: center; font-size: 32px; font-weight: bold;
-                letter-spacing: 8px; color: #6c63ff; margin: 20px 0; }
-        .footer { background: #f4f4f4; padding: 20px; text-align: center;
-                  color: #999; font-size: 12px; }
-    </style>
-</head>
-<body>
-<div class="container">
-    <div class="header">
-        <h1>📚 Editora Orange</h1>
-        <p style="color:#fff; margin:8px 0 0;">Código de verificação</p>
-    </div>
-    <div class="body">
-        <h2>Olá, {{ user.first_name|default:user.username }}!</h2>
-        <p>Use o código abaixo para concluir seu login (verificação em duas etapas):</p>
+{% extends 'emails/base_email.html' %}
 
-        <div class="code">{{ code }}</div>
+{% block email_subtitle %}Código de verificação{% endblock %}
 
-        <p style="color:#999; font-size:13px;">
-            Este código é válido por {{ validity }} minutos e só pode ser usado uma vez.
-            Se você não tentou entrar na sua conta, ignore este e-mail.
-        </p>
+{% block email_body %}
+    <h2>Olá, {{ user.first_name|default:user.username }}!</h2>
+    <p>Use o código abaixo para concluir seu login (verificação em duas etapas):</p>
+
+    <div class="box" style="text-align:center; font-size:32px; font-weight:700;
+                            letter-spacing:8px; color:#1a1a2e; border:2px dashed #c9a84c;">
+        {{ code }}
     </div>
-    <div class="footer">
-        © Editora Orange — Todos os direitos reservados.<br>
-        Dúvidas? Entre em contato: suporte@editoraorange.com.br
-    </div>
-</div>
-</body>
-</html>
+
+    <p class="muted">
+        Este código é válido por {{ validity }} minutos e só pode ser usado uma vez.
+        Se você não tentou entrar na sua conta, ignore este e-mail.
+    </p>
+{% endblock %}

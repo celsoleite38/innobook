@@ -146,6 +146,9 @@
                             <th class="text-end" style="color:#2d5a2d;">
                                 Líquido Escritor
                             </th>
+                            <th class="text-end">
+                                Frete (escritor)
+                            </th>
                             <th class="text-end">Já sacado</th>
                             <th class="text-end">Disponível</th>
                         </tr>
@@ -196,6 +199,12 @@
                                 </span>
                             </td>
 
+                            <!-- Frete -->
+                            <td class="text-end"
+                                style="font-size:13px; color:#c9a84c;">
+                                R$ {{ p.freight|floatformat:2 }}
+                            </td>
+
                             <!-- Já sacado -->
                             <td class="text-end"
                                 style="font-size:13px; color:#888;">
@@ -238,6 +247,10 @@
                             <td class="text-end"
                                 style="font-size:13px; color:#2d5a2d; font-weight:700;">
                                 R$ {{ totals.net|floatformat:2 }}
+                            </td>
+                            <td class="text-end"
+                                style="font-size:13px; color:#c9a84c; font-weight:700;">
+                                R$ {{ totals.freight|floatformat:2 }}
                             </td>
                             <td></td>
                             <td></td>

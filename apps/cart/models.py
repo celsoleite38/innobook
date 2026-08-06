@@ -1,6 +1,6 @@
 from django.db import models
 from django.conf import settings
-from apps.products.models import Ebook
+from apps.products.models import Ebook, FORMAT_CHOICES, FORMAT_DIGITAL
 
 
 class Cart(models.Model):
@@ -33,15 +33,21 @@ class CartItem(models.Model):
     """Item dentro do carrinho."""
     cart       = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
     ebook      = models.ForeignKey(Ebook, on_delete=models.CASCADE)
+    variant    = models.CharField(
+        max_length=20,
+        choices=FORMAT_CHOICES,
+        default=FORMAT_DIGITAL,
+        verbose_name='Formato'
+    )
     added_at   = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = 'Item do Carrinho'
-        unique_together = ['cart', 'ebook']  # não duplica
+        unique_together = ['cart', 'ebook', 'variant']  # não duplica formato
 
     @property
     def price(self):
-        return self.ebook.get_price()
+        return self.ebook.get_format_price(self.variant)
 
     def __str__(self):
-        return f'{self.ebook.title} — {self.cart.user.username}'
+        return f'{self.ebook.title} ({self.get_variant_display()}) — {self.cart.user.username}'
