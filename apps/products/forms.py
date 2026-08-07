@@ -37,6 +37,27 @@ class EbookForm(forms.ModelForm):
             'language'      : forms.TextInput(attrs={'class': 'form-control'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for campo in ('physical_stock', 'physical_weight_g',
+                      'physical_length_cm', 'physical_width_cm',
+                      'physical_height_cm'):
+            self.fields[campo].required = False
+
+    def clean(self):
+        dados = super().clean()
+        padroes = {
+            'physical_stock': 0,
+            'physical_weight_g': 300,
+            'physical_length_cm': 16,
+            'physical_width_cm': 16,
+            'physical_height_cm': 2,
+        }
+        for campo, valor in padroes.items():
+            if dados.get(campo) is None:
+                dados[campo] = valor
+        return dados
+
     def clean_file(self):
         arquivo = self.cleaned_data.get('file')
         validar_ebook(arquivo)
