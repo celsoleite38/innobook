@@ -6,7 +6,7 @@ document.addEventListener('change', function (event) {
         
         if (input.files && input.files[0]) {
             const arquivo = input.files[0];
-            const tamanhoMaximo = 3 * 1024 * 1024; // 3 MB em Bytes (ajustado para o seu novo teste)
+            const tamanhoMaximo = 5 * 1024 * 1024; // 5 MB em Bytes
             
             if (arquivo.size > tamanhoMaximo) {
                 // Alerta amigável

@@ -3,7 +3,7 @@ from django.core.validators import FileExtensionValidator
 
 
 # Limite de upload (combinado com o validar_tamanho.js no cliente)
-MAX_UPLOAD_SIZE = 3 * 1024 * 1024  # 3 MB
+MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5 MB
 
 # Extensões permitidas por tipo de arquivo
 FORMATOS_EBOOK = ['pdf', 'epub', 'mobi']
@@ -17,8 +17,13 @@ TAMANHO = (
 
 def validar_tamanho(upload):
     """Rejeita uploads acima de MAX_UPLOAD_SIZE."""
-    if upload and upload.size > MAX_UPLOAD_SIZE:
-        raise ValidationError(TAMANHO)
+    if not upload:
+        return
+    try:
+        if upload.size > MAX_UPLOAD_SIZE:
+            raise ValidationError(TAMANHO)
+    except (FileNotFoundError, OSError):
+        return
 
 
 def validar_ebook(upload):

@@ -14,29 +14,52 @@
                     {% csrf_token %}
                     <div class="row g-3">
 
+                        {% if form.non_field_errors %}
+                        <div class="col-12">
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors|striptags }}
+                            </div>
+                        </div>
+                        {% endif %}
+
                         <div class="col-12">
                             <label class="form-label fw-semibold">Título *</label>
                             {{ form.title }}
+                            {% if form.title.errors %}
+                            <div class="text-danger small mt-1">{{ form.title.errors|striptags }}</div>
+                            {% endif %}
                         </div>
 
                         <div class="col-12">
                             <label class="form-label fw-semibold">Descrição *</label>
                             {{ form.description }}
+                            {% if form.description.errors %}
+                            <div class="text-danger small mt-1">{{ form.description.errors|striptags }}</div>
+                            {% endif %}
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Categoria</label>
                             {{ form.category }}
+                            {% if form.category.errors %}
+                            <div class="text-danger small mt-1">{{ form.category.errors|striptags }}</div>
+                            {% endif %}
                         </div>
 
                         <div class="col-md-3">
                             <label class="form-label fw-semibold">Idioma</label>
                             {{ form.language }}
+                            {% if form.language.errors %}
+                            <div class="text-danger small mt-1">{{ form.language.errors|striptags }}</div>
+                            {% endif %}
                         </div>
 
                         <div class="col-md-3">
                             <label class="form-label fw-semibold">Páginas</label>
                             {{ form.pages }}
+                            {% if form.pages.errors %}
+                            <div class="text-danger small mt-1">{{ form.pages.errors|striptags }}</div>
+                            {% endif %}
                         </div>
 
                         <div class="col-md-6">
@@ -44,6 +67,9 @@
                                 Preço (R$) *
                             </label>
                             {{ form.price }}
+                            {% if form.price.errors %}
+                            <div class="text-danger small mt-1">{{ form.price.errors|striptags }}</div>
+                            {% endif %}
                         </div>
 
                         <div class="col-md-6">
@@ -51,6 +77,9 @@
                                 Preço promocional (R$)
                             </label>
                             {{ form.discount_price }}
+                            {% if form.discount_price.errors %}
+                            <div class="text-danger small mt-1">{{ form.discount_price.errors|striptags }}</div>
+                            {% endif %}
                         </div>
 
                         <div class="col-12">
@@ -64,6 +93,9 @@
                             </div>
                             {% endif %}
                             {{ form.cover }}
+                            {% if form.cover.errors %}
+                            <div class="text-danger small mt-1">{{ form.cover.errors|striptags }}</div>
+                            {% endif %}
                         </div>
 
                         <div class="col-12">
@@ -80,6 +112,9 @@
                             </div>
                             {% endif %}
                             {{ form.file }}
+                            {% if form.file.errors %}
+                            <div class="text-danger small mt-1">{{ form.file.errors|striptags }}</div>
+                            {% endif %}
                         </div>
 
                         <div class="col-12">
@@ -90,6 +125,9 @@
                                 </span>
                             </label>
                             {{ form.preview }}
+                            {% if form.preview.errors %}
+                            <div class="text-danger small mt-1">{{ form.preview.errors|striptags }}</div>
+                            {% endif %}
                         </div>
                         <!-- Após o campo do arquivo PDF -->
                         <div class="col-12">
@@ -103,6 +141,9 @@
                             </div>
                             {% endif %}
                             {{ form.file_epub }}
+                            {% if form.file_epub.errors %}
+                            <div class="text-danger small mt-1">{{ form.file_epub.errors|striptags }}</div>
+                            {% endif %}
                         </div>
 
                         <div class="col-12">
@@ -116,6 +157,9 @@
                             </div>
                             {% endif %}
                             {{ form.file_mobi }}
+                            {% if form.file_mobi.errors %}
+                            <div class="text-danger small mt-1">{{ form.file_mobi.errors|striptags }}</div>
+                            {% endif %}
                         </div>
 
                         {% if form.errors %}
