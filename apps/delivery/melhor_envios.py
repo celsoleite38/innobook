@@ -305,7 +305,11 @@ def calcular_frete(producer, origem_cep, destino_cep, items):
     for offer in data if isinstance(data, list) else []:
         if not offer.get('id'):
             continue
-        price = offer.get('custom_price') or offer.get('price') or 0
+        if offer.get('error'):
+            continue
+        price = float(offer.get('custom_price') or offer.get('price') or 0)
+        if price <= 0:
+            continue
         delivery = offer.get('custom_delivery_time') or offer.get('delivery_time') or 0
         packages = offer.get('packages') or []
         offers.append({

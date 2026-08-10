@@ -289,7 +289,9 @@ def _build_single_offer(request, ebook, zipcode):
     Valida a oferta escolhida no checkout de livro único (server-side).
     Retorna: dict(offer) se válida | False se inválida | None se não escolhida.
     """
-    from apps.delivery.melhor_envios import calcular_frete, MelhorEnviosError
+    from apps.delivery.melhor_envios import (
+        calcular_frete, shipping_ready_error, MelhorEnviosError,
+    )
 
     chosen = request.POST.get('offer', '').strip()
     if not chosen:
