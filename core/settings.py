@@ -141,9 +141,9 @@ AUTHENTICATION_BACKENDS = [
 ASAAS_API_KEY = os.getenv('ASAAS_API_KEY', '')
 ASAAS_ENV     = os.getenv('ASAAS_ENV', 'sandbox')
 ASAAS_URL     = (
-    'https://sandbox.asaas.com/api/v3'
+    'https://api-sandbox.asaas.com/v3'
     if os.getenv('ASAAS_ENV') == 'sandbox'
-    else 'https://api.asaas.com/api/v3'
+    else 'https://api.asaas.com/v3'
 )
 
 ASAAS_WEBHOOK_TOKEN = os.getenv('ASAAS_WEBHOOK_TOKEN', '')
