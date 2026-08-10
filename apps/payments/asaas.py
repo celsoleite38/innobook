@@ -1,4 +1,5 @@
 import requests
+import json
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
@@ -9,12 +10,30 @@ def _is_sandbox():
 
 
 def _headers():
-    if not settings.ASAAS_API_KEY:
-        raise Exception('ASAAS_API_KEY não configurada no.env')
+    key = (settings.ASAAS_API_KEY or '').strip()
+    if not key:
+        raise Exception('ASAAS_API_KEY não configurada no .env')
     return {
-        'access_token': settings.ASAAS_API_KEY,
+        'access_token': key,
         'Content-Type': 'application/json',
     }
+
+
+def _parse(response, contexto):
+    """Converte a resposta em JSON, levantando erro claro se o corpo for inválido."""
+    if response.status_code >= 400:
+        corpo = response.text.strip()
+        raise Exception(
+            f'Asaas {contexto} falhou (HTTP {response.status_code}): '
+            f'{corpo[:500] or "(corpo vazio)"}'
+        )
+    try:
+        return response.json()
+    except (json.JSONDecodeError, ValueError):
+        raise Exception(
+            f'Asaas {contexto} retornou corpo inválido '
+            f'(HTTP {response.status_code}): {response.text[:500]!r}'
+        )
 
 
 def _url(path):
@@ -41,7 +60,7 @@ def get_or_create_customer(user):
         headers=_headers(),
         params={'email': user.email}
     )
-    data = response.json()
+    data = _parse(response, 'busca de cliente')
 
     if data.get('data'):
         customer = data['data'][0]
@@ -104,7 +123,7 @@ def create_charge(order, billing_type, ip=None, value=None):
         payload['remoteIp'] = ip
 
     response = requests.post(_url('/payments'), headers=_headers(), json=payload)
-    charge = response.json()
+    charge = _parse(response, 'criação de cobrança')
 
     if 'id' not in charge:
         raise Exception(f'Erro ao criar cobrança Asaas: {charge}')
@@ -125,20 +144,17 @@ def refund_charge(charge_id, value=None):
         headers=_headers(),
         json=payload,
     )
-    data = response.json()
-    if response.status_code >= 400:
-        raise Exception(f'Erro ao estornar cobrança: {data}')
-    return data
+    return _parse(response, 'estorno de cobrança')
 
 
 def get_charge(charge_id):
     response = requests.get(_url(f'/payments/{charge_id}'), headers=_headers())
-    return response.json()
+    return _parse(response, f'consulta da cobrança {charge_id}')
 
 
 def get_pix_qrcode(charge_id):
     response = requests.get(_url(f'/payments/{charge_id}/pixQrCode'), headers=_headers())
-    return response.json()
+    return _parse(response, f'QR Code da cobrança {charge_id}')
 
 
 def _due_date(billing_type):
