@@ -82,6 +82,73 @@
                             {% endif %}
                         </div>
 
+                        <!-- Livro Físico (opcional) -->
+                        <div class="col-12 mt-4">
+                            <div class="p-3" style="background:#faf7f1; border:0.5px solid #e0d8cc; border-radius:6px;">
+                                <p class="fw-semibold mb-1">
+                                    <i class="bi bi-book me-1"></i>Livro Físico
+                                    <span class="text-muted fw-normal">(opcional)</span>
+                                </p>
+                                <p class="small text-muted mb-3" style="font-size:12px;">
+                                    Preencha para vender a versão impressa. O estoque é controlado por você,
+                                    pelo seu painel. Peso e dimensões são usados na cotação do frete.
+                                </p>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-semibold">Preço físico (R$)</label>
+                                        {{ form.physical_price }}
+                                        {% if form.physical_price.errors %}
+                                        <div class="text-danger small mt-1">{{ form.physical_price.errors|striptags }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-semibold">Estoque físico</label>
+                                        {{ form.physical_stock }}
+                                        {% if form.physical_stock.errors %}
+                                        <div class="text-danger small mt-1">{{ form.physical_stock.errors|striptags }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-semibold">
+                                            Preço combo físico + digital (R$)
+                                        </label>
+                                        {{ form.combo_price }}
+                                        {% if form.combo_price.errors %}
+                                        <div class="text-danger small mt-1">{{ form.combo_price.errors|striptags }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-semibold">Peso (g)</label>
+                                        {{ form.physical_weight_g }}
+                                        {% if form.physical_weight_g.errors %}
+                                        <div class="text-danger small mt-1">{{ form.physical_weight_g.errors|striptags }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-semibold">Comprimento (cm)</label>
+                                        {{ form.physical_length_cm }}
+                                        {% if form.physical_length_cm.errors %}
+                                        <div class="text-danger small mt-1">{{ form.physical_length_cm.errors|striptags }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-semibold">Largura (cm)</label>
+                                        {{ form.physical_width_cm }}
+                                        {% if form.physical_width_cm.errors %}
+                                        <div class="text-danger small mt-1">{{ form.physical_width_cm.errors|striptags }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-semibold">Altura (cm)</label>
+                                        {{ form.physical_height_cm }}
+                                        {% if form.physical_height_cm.errors %}
+                                        <div class="text-danger small mt-1">{{ form.physical_height_cm.errors|striptags }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="col-12">
                             <label class="form-label fw-semibold">
                                 Capa do eBook *

@@ -131,7 +131,7 @@ class ShippingProfileAdmin(admin.ModelAdmin):
 @admin.register(EditoraShippingAccount)
 class EditoraShippingAccountAdmin(admin.ModelAdmin):
     list_display = ['id', 'holder_name', 'is_connected', 'me_expires_at', 'updated_at']
-    readonly_fields = ['me_expires_at', 'updated_at']
+    readonly_fields = ['me_expires_at', 'updated_at', 'is_connected']
 
     fieldsets = (
         ('Conta', {

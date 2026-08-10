@@ -196,7 +196,7 @@ class Ebook(models.Model):
         return bool(self.physical_price and self.physical_stock)
 
     def physical_dimensions(self):
-        """Retorna (comprimento, largura, altura) em cm, ou None se incompleto."""
+        """Retorna (comprimento, largura, altura, peso_g) ou None se incompleto."""
         if not all([self.physical_length_cm, self.physical_width_cm,
                     self.physical_height_cm, self.physical_weight_g]):
             return None
@@ -204,6 +204,7 @@ class Ebook(models.Model):
             float(self.physical_length_cm),
             float(self.physical_width_cm),
             float(self.physical_height_cm),
+            self.physical_weight_g,
         )
 
     def get_combo_price(self):
