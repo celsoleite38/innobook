@@ -54,35 +54,45 @@ def get_or_create_customer(user):
         if not cpf_valido(cpf_limpo):
             raise Exception('CPF inválido. Verifique o CPF no seu perfil.')
 
-    # Busca cliente existente
+    # Busca cliente existente pelo e-mail
     response = requests.get(
         _url('/customers'),
         headers=_headers(),
         params={'email': user.email}
     )
     data = _parse(response, 'busca de cliente')
+    candidates = data.get('data') or []
 
-    if data.get('data'):
-        customer = data['data'][0]
-        customer_id = customer['id']
+    # 1. Cliente com o mesmo e-mail E o mesmo CPF → reutiliza
+    if cpf_limpo:
+        for customer in candidates:
+            if customer.get('cpfCnpj') == cpf_limpo:
+                return customer['id']
 
-        # CPF vazio no Asaas → atualiza com PUT
-        if not customer.get('cpfCnpj') and cpf_limpo != '00000000000':
-            put_resp = requests.put(
-                _url(f'/customers/{customer_id}'),
-                headers=_headers(),
-                json={
-                    'name': user.get_full_name() or user.username,
-                    'email': user.email,
-                    'cpfCnpj': cpf_limpo,
-                }
-            )
-            if put_resp.status_code != 200:
-                print(f'Erro ao atualizar CPF: {put_resp.text}')
+        # 2. Cliente do e-mail com CPF vazio no Asaas → preenche CPF e reutiliza
+        if cpf_limpo != '00000000000':
+            for customer in candidates:
+                if not customer.get('cpfCnpj'):
+                    put_resp = requests.put(
+                        _url(f"/customers/{customer['id']}"),
+                        headers=_headers(),
+                        json={
+                            'name': user.get_full_name() or user.username,
+                            'email': user.email,
+                            'cpfCnpj': cpf_limpo,
+                        }
+                    )
+                    if put_resp.status_code == 200:
+                        return customer['id']
+                    print(f'Erro ao atualizar CPF: {put_resp.text}')
 
-        return customer_id
+    # 3. Sem CPF no sistema → reutiliza o primeiro cliente do e-mail
+    if not cpf_limpo and candidates:
+        return candidates[0]['id']
 
-    # Cliente não existe — cria novo
+    # 4. Cliente não existe, ou o e-mail pertence a outro cliente (colisão,
+    #    ex.: conta antiga com CPF diferente) → cria cliente próprio para não
+    #    misturar dados do comprador.
     payload = {
         'name': user.get_full_name() or user.username,
         'email': user.email,
@@ -114,7 +124,7 @@ def create_charge(order, billing_type, ip=None, value=None):
         'billingType': billing_type,
         'value': float(value) if value is not None else float(order.amount),
         'dueDate': _due_date(billing_type),
-        'description': f'BookHub — {order.ebook.title} ({order.get_variant_display()})',
+        'description': f'Editora Orange — {order.ebook.title} ({order.get_variant_display()})',
         'externalReference': str(order.order_id),
         'postalService': False,
     }

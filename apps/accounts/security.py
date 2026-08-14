@@ -41,7 +41,7 @@ def _send_mail_with_retry(subject, plain, to, html=None, attempts=3, delay=1.5):
 
 
 def send_otp_email(user, otp):
-    subject = 'Seu código de acesso — Inno Book'
+    subject = 'Seu código de acesso — Editora Orange'
     ctx = {'otp': otp, 'code': otp, 'user': user, 'validity': OTP_VALID_MINUTES}
     html = render_to_string('emails/otp_email.html', ctx)
     plain = render_to_string('emails/otp_email.txt', ctx)
@@ -60,7 +60,7 @@ def send_verification_email(request, user):
         reverse('accounts:verify_email', args=[uidb64, token])
     )
 
-    subject = 'Confirme seu e-mail — Inno Book'
+    subject = 'Confirme seu e-mail — Editora Orange'
     html = render_to_string(
         'emails/verify_email.html', {'url': url, 'user': user}
     )

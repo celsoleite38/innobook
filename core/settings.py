@@ -174,7 +174,7 @@ EMAIL_USE_SSL       = os.getenv('EMAIL_USE_SSL', 'False') == 'True'
 EMAIL_TIMEOUT       = int(os.getenv('EMAIL_TIMEOUT', 30))
 EMAIL_HOST_USER     = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL  = os.getenv('DEFAULT_FROM_EMAIL', 'BookHub <noreply@erd.com.br>')
+DEFAULT_FROM_EMAIL  = os.getenv('DEFAULT_FROM_EMAIL', 'Editora Orange <noreply@editoraorange.com.br>')
 
 # Em desenvolvimento, mostra emails no terminal apenas se não houver SMTP configurado
 if DEBUG and not EMAIL_HOST_USER:

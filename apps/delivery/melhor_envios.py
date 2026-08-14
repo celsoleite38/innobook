@@ -25,7 +25,7 @@ from .models import EditoraShippingAccount, ShippingProfile
 
 logger = logging.getLogger(__name__)
 
-USER_AGENT = f'BookHub ({settings.DEFAULT_FROM_EMAIL or "contato@bookhub.com.br"})'
+USER_AGENT = f'Editora Orange ({settings.DEFAULT_FROM_EMAIL or "contato@editoraorange.com.br"})'
 TOKEN_TTL = timedelta(days=30)
 REFRESH_GRACE = timedelta(days=1)  # renova 1 dia antes de expirar
 
