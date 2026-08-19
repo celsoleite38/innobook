@@ -41,4 +41,10 @@ urlpatterns = [
     path('producer/ebook/<int:pk>/bonus/',      views.bonus_list_view,   name='ebook_bonuses'),
     path('producer/ebook/<int:ebook_pk>/bonus/new/', views.bonus_create_view, name='bonus_create'),
     path('producer/bonus/<int:pk>/delete/',     views.bonus_delete_view, name='bonus_delete'),
+
+    # Painel de Administração — Gestão de Usuários
+    path('admin-painel/usuarios/', views.admin_users_list_view, name='admin_users'),
+    path('admin-painel/usuarios/<int:pk>/', views.admin_user_detail_view, name='admin_user_detail'),
+    path('admin-painel/usuarios/<int:pk>/toggle-access/', views.admin_toggle_access_view, name='admin_toggle_access'),
+    path('admin-painel/usuarios/<int:pk>/toggle-writer/', views.admin_toggle_writer_view, name='admin_toggle_writer'),
 ]

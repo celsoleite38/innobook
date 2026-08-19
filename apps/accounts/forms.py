@@ -47,6 +47,12 @@ class RegisterForm(forms.ModelForm):
             'placeholder': '••••••••',
         })
     )
+    quer_ser_escritor = forms.BooleanField(
+        label='Quero ser escritor',
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        help_text='Marque se deseja vender ebooks na plataforma'
+    )
 
     class Meta:
         model  = User
@@ -94,8 +100,14 @@ class RegisterForm(forms.ModelForm):
         user.set_password(self.cleaned_data['password1'])
         user.email    = self.cleaned_data['email']
         user.username = self._gerar_username(self.cleaned_data['email'])
-        user.role     = User.BUYER  # todo mundo nasce comprador; produtor requer aprovação
         user.email_verified = False
+
+        if self.cleaned_data.get('quer_ser_escritor'):
+            user.is_writer = True
+            user.producer_approved = True
+        else:
+            user.role = User.BUYER
+
         if commit:
             user.save()
         return user

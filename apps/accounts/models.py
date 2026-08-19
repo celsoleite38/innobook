@@ -30,7 +30,8 @@ class User(AbstractUser):
     email_verified    = models.BooleanField(default=False, verbose_name='E-mail verificado')
     two_factor_enabled = models.BooleanField(default=False, verbose_name='2FA ativo')
 
-    # Produtor
+    # Produtor / Escritor
+    is_writer          = models.BooleanField(default=False, verbose_name='É escritor')
     producer_requested = models.BooleanField(default=False, verbose_name='Solicitou ser produtor')
     producer_approved  = models.BooleanField(default=False, verbose_name='Produtor aprovado')
 
@@ -51,12 +52,11 @@ class User(AbstractUser):
         return bool(self.locked_until and self.locked_until > timezone.now())
 
     def is_producer(self):
-        return self.role == self.PRODUCER
+        return self.is_writer or self.role == self.PRODUCER
 
     def is_producer_active(self):
         return (
-            self.role == self.PRODUCER
-            and self.producer_approved
+            (self.is_writer or (self.role == self.PRODUCER and self.producer_approved))
             and self.email_verified
         )
 

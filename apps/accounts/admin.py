@@ -8,10 +8,10 @@ class CustomUserAdmin(UserAdmin):
 
     list_display  = [
         'username', 'email', 'get_full_name',
-        'role_badge', 'email_verified', 'producer_approved',
+        'role_badge', 'is_writer', 'email_verified', 'producer_approved',
         'is_active', 'date_joined'
     ]
-    list_filter   = ['role', 'producer_approved', 'producer_requested',
+    list_filter   = ['role', 'is_writer', 'producer_approved', 'producer_requested',
                      'email_verified', 'two_factor_enabled', 'is_active', 'is_staff']
     search_fields = ['username', 'email', 'first_name', 'last_name']
     ordering      = ['-date_joined']
@@ -25,7 +25,7 @@ class CustomUserAdmin(UserAdmin):
             'fields': ('email_verified', 'two_factor_enabled')
         }),
         ('Produtor', {
-            'fields': ('producer_requested', 'producer_approved')
+            'fields': ('is_writer', 'producer_requested', 'producer_approved')
         }),
     )
 

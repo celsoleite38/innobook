@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode, url_has_allowed_host_and_scheme
 from django.urls import reverse
+from django.core.paginator import Paginator
 
 from .models import User
 from .forms import LoginForm, RegisterForm, ProfileForm
@@ -286,11 +287,19 @@ def register_view(request):
                 send_verification_email(request, user)
             except Exception as e:
                 print(f'Erro ao enviar e-mail de verificação: {e}')
-            messages.success(
-                request,
-                'Conta criada! Enviamos um link de confirmação para o seu '
-                'e-mail. Confirme-o para liberar o acesso.'
-            )
+
+            if user.is_writer:
+                messages.success(
+                    request,
+                    'Conta criada como escritor! Enviamos um link de confirmação '
+                    'para o seu e-mail. Confirme-o para liberar o acesso.'
+                )
+            else:
+                messages.success(
+                    request,
+                    'Conta criada! Enviamos um link de confirmação para o seu '
+                    'e-mail. Confirme-o para liberar o acesso.'
+                )
             return redirect('accounts:login')
 
     return render(request, 'accounts/register.html', {'form': form})
@@ -511,3 +520,118 @@ def withdraw_request_view(request):
         'financial': financial,
         'bank_data': bank_data,
     })
+
+
+# ---------------------------------------------------------------------------
+# Painel de Administração — Gestão de Usuários
+# ---------------------------------------------------------------------------
+
+def staff_or_superuser_required(view_func):
+    """Permite acesso a superusuários E staff."""
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect(settings.LOGIN_URL + '?next=' + request.path)
+        if not (request.user.is_superuser or request.user.is_staff):
+            messages.error(request, 'Acesso restrito ao administrador.')
+            return redirect('accounts:dashboard')
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
+@staff_or_superuser_required
+def admin_users_list_view(request):
+    """Lista todos os usuários com filtros e busca."""
+    status_filter = request.GET.get('status', '')
+    role_filter = request.GET.get('role', '')
+    search = request.GET.get('q', '')
+
+    users = User.objects.all().order_by('-date_joined')
+
+    if status_filter == 'active':
+        users = users.filter(is_active=True)
+    elif status_filter == 'inactive':
+        users = users.filter(is_active=False)
+
+    if role_filter == 'writer':
+        users = users.filter(is_writer=True)
+    elif role_filter == 'buyer':
+        users = users.filter(is_writer=False)
+    elif role_filter == 'pending':
+        users = users.filter(producer_requested=True, producer_approved=False)
+
+    if search:
+        users = users.filter(
+            first_name__icontains=search
+        ) | users.filter(
+            last_name__icontains=search
+        ) | users.filter(
+            email__icontains=search
+        ) | users.filter(
+            cpf__icontains=search
+        )
+
+    paginator = Paginator(users, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    stats = {
+        'total': User.objects.count(),
+        'active': User.objects.filter(is_active=True).count(),
+        'writers': User.objects.filter(is_writer=True).count(),
+        'pending': User.objects.filter(producer_requested=True, producer_approved=False).count(),
+    }
+
+    return render(request, 'admin_panel/users.html', {
+        'page_obj': page_obj,
+        'stats': stats,
+        'search': search,
+        'status_filter': status_filter,
+        'role_filter': role_filter,
+    })
+
+
+@staff_or_superuser_required
+def admin_user_detail_view(request, pk):
+    """Detalhes de um usuário específico."""
+    user_obj = get_object_or_404(User, pk=pk)
+    return render(request, 'admin_panel/user_detail.html', {
+        'user_obj': user_obj,
+    })
+
+
+@staff_or_superuser_required
+def admin_toggle_access_view(request, pk):
+    """Ativa ou desativa o acesso de um usuário."""
+    if request.method != 'POST':
+        return redirect('accounts:admin_users')
+
+    user_obj = get_object_or_404(User, pk=pk)
+
+    if user_obj.pk == request.user.pk:
+        messages.error(request, 'Você não pode desativar sua própria conta.')
+        return redirect('accounts:admin_user_detail', pk=pk)
+
+    user_obj.is_active = not user_obj.is_active
+    user_obj.save(update_fields=['is_active'])
+
+    status = 'ativado' if user_obj.is_active else 'desativado'
+    messages.success(request, f'Acesso de {user_obj.first_name or user_obj.email} {status}.')
+    return redirect('accounts:admin_user_detail', pk=pk)
+
+
+@staff_or_superuser_required
+def admin_toggle_writer_view(request, pk):
+    """Marca ou desmarca um usuário como escritor."""
+    if request.method != 'POST':
+        return redirect('accounts:admin_users')
+
+    user_obj = get_object_or_404(User, pk=pk)
+    user_obj.is_writer = not user_obj.is_writer
+    if user_obj.is_writer:
+        user_obj.producer_approved = True
+    user_obj.save(update_fields=['is_writer', 'producer_approved'])
+
+    status = 'agora é escritor' if user_obj.is_writer else 'não é mais escritor'
+    messages.success(request, f'{user_obj.first_name or user_obj.email} {status}.')
+    return redirect('accounts:admin_user_detail', pk=pk)

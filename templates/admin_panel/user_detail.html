@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+{% block title %}Detalhes do Usuario — Editora Orange{% endblock %}
+
+{% block content %}
+
+<section style="background:#1a1a2e; padding:32px 0;">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <p style="color:#c9a84c; font-size:11px; letter-spacing:3px;
+                          text-transform:uppercase; margin-bottom:8px;">
+                    Administrador
+                </p>
+                <h1 style="font-family:'Playfair Display',serif; color:#f5f0e8;
+                           font-size:28px; font-weight:600; margin:0;">
+                    Detalhes do Usuario
+                </h1>
+            </div>
+            <a href="{% url 'accounts:admin_users' %}"
+               class="btn-outline-gold"
+               style="padding:8px 18px; font-size:11px;">
+                <i class="bi bi-arrow-left me-1"></i>Voltar
+            </a>
+        </div>
+    </div>
+</section>
+
+<section class="py-5 bg-cream">
+    <div class="container">
+        <div class="row g-4">
+
+            <!-- Informacoes do Usuario -->
+            <div class="col-md-8">
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:2rem;">
+
+                    <div class="d-flex align-items-center gap-4 mb-4">
+                        <div style="width:72px; height:72px; background:#1a1a2e;
+                                    border-radius:50%; display:flex; align-items:center;
+                                    justify-content:center; flex-shrink:0; overflow:hidden;">
+                            {% if user_obj.avatar %}
+                            <img src="{{ user_obj.avatar.url }}" alt="avatar"
+                                 style="width:100%; height:100%; object-fit:cover;">
+                            {% else %}
+                            <i class="bi bi-person" style="font-size:28px; color:#c9a84c;"></i>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h2 style="font-family:'Playfair Display',serif; font-size:22px;
+                                       font-weight:600; color:#1a1a2e; margin-bottom:4px;">
+                                {{ user_obj.get_full_name|default:user_obj.username }}
+                            </h2>
+                            <p style="font-size:13px; color:#888; margin:0;">
+                                @{{ user_obj.username }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div style="border-top:0.5px solid #e0d8cc; padding-top:1.5rem;">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <p style="font-size:11px; letter-spacing:1px;
+                                          text-transform:uppercase; color:#888; margin-bottom:4px;">
+                                    Email
+                                </p>
+                                <p style="font-size:14px; color:#1a1a2e; margin:0;">
+                                    {{ user_obj.email }}
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p style="font-size:11px; letter-spacing:1px;
+                                          text-transform:uppercase; color:#888; margin-bottom:4px;">
+                                    CPF
+                                </p>
+                                <p style="font-size:14px; color:#1a1a2e; margin:0;">
+                                    {{ user_obj.cpf_formatado|default:"Nao informado" }}
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p style="font-size:11px; letter-spacing:1px;
+                                          text-transform:uppercase; color:#888; margin-bottom:4px;">
+                                    Membro desde
+                                </p>
+                                <p style="font-size:14px; color:#1a1a2e; margin:0;">
+                                    {{ user_obj.date_joined|date:"d/m/Y H:i" }}
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p style="font-size:11px; letter-spacing:1px;
+                                          text-transform:uppercase; color:#888; margin-bottom:4px;">
+                                    Ultimo acesso
+                                </p>
+                                <p style="font-size:14px; color:#1a1a2e; margin:0;">
+                                    {% if user_obj.last_login %}
+                                    {{ user_obj.last_login|date:"d/m/Y H:i" }}
+                                    {% else %}
+                                    Nunca acessou
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if user_obj.bio %}
+                    <div style="border-top:0.5px solid #e0d8cc; padding-top:1.5rem; margin-top:1.5rem;">
+                        <p style="font-size:11px; letter-spacing:1px;
+                                  text-transform:uppercase; color:#888; margin-bottom:4px;">
+                            Bio
+                        </p>
+                        <p style="font-size:14px; color:#1a1a2e; margin:0;">
+                            {{ user_obj.bio }}
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Sidebar de Status e Acoes -->
+            <div class="col-md-4">
+
+                <!-- Status -->
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:1.5rem; margin-bottom:1rem;">
+                    <p style="font-size:11px; letter-spacing:1px; text-transform:uppercase;
+                              color:#888; margin-bottom:1rem;">
+                        Status
+                    </p>
+
+                    <div class="d-flex flex-column gap-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span style="font-size:13px; color:#1a1a2e;">Conta</span>
+                            <span style="font-size:10px; padding:4px 12px;
+                                         border-radius:20px; font-weight:500;
+                                         {% if user_obj.is_active %}
+                                             background:#f0f7f0; color:#2d5a2d;
+                                             border:0.5px solid #b8d8b8;
+                                         {% else %}
+                                             background:#fdf0f0; color:#8b2020;
+                                             border:0.5px solid #e8b8b8;
+                                         {% endif %}">
+                                {% if user_obj.is_active %}✓ Ativo{% else %}✗ Inativo{% endif %}
+                            </span>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span style="font-size:13px; color:#1a1a2e;">Escritor</span>
+                            <span style="font-size:10px; padding:4px 12px;
+                                         border-radius:20px; font-weight:500;
+                                         {% if user_obj.is_writer %}
+                                             background:#f0f4ff; color:#1a1a6e;
+                                             border:0.5px solid #c0c8e8;
+                                         {% else %}
+                                             background:#f5f5f5; color:#888;
+                                             border:0.5px solid #e0e0e0;
+                                         {% endif %}">
+                                {% if user_obj.is_writer %}✓ Sim{% else %}Nao{% endif %}
+                            </span>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span style="font-size:13px; color:#1a1a2e;">Email Verificado</span>
+                            {% if user_obj.email_verified %}
+                            <i class="bi bi-check-circle-fill" style="color:#2d5a2d;"></i>
+                            {% else %}
+                            <i class="bi bi-x-circle-fill" style="color:#8b2020;"></i>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span style="font-size:13px; color:#1a1a2e;">Solicitou Produtor</span>
+                            {% if user_obj.producer_requested %}
+                            <i class="bi bi-check-circle-fill" style="color:#c9a84c;"></i>
+                            {% else %}
+                            <i class="bi bi-dash-circle-fill" style="color:#ccc;"></i>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span style="font-size:13px; color:#1a1a2e;">Produtor Aprovado</span>
+                            {% if user_obj.producer_approved %}
+                            <i class="bi bi-check-circle-fill" style="color:#2d5a2d;"></i>
+                            {% else %}
+                            <i class="bi bi-x-circle-fill" style="color:#8b2020;"></i>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Acoes -->
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:1.5rem;">
+                    <p style="font-size:11px; letter-spacing:1px; text-transform:uppercase;
+                              color:#888; margin-bottom:1rem;">
+                        Acoes
+                    </p>
+
+                    <div class="d-flex flex-column gap-2">
+                        <!-- Toggle Acesso -->
+                        <form method="post" action="{% url 'accounts:admin_toggle_access' user_obj.pk %}">
+                            {% csrf_token %}
+                            {% if user_obj.is_active %}
+                            <button type="submit" class="btn btn-outline-danger w-100"
+                                    style="font-size:12px; padding:10px;"
+                                    onclick="return confirm('Desativar acesso de {{ user_obj.first_name|default:user_obj.email }}?')">
+                                <i class="bi bi-lock me-1"></i>Desativar Acesso
+                            </button>
+                            {% else %}
+                            <button type="submit" class="btn btn-outline-success w-100"
+                                    style="font-size:12px; padding:10px;"
+                                    onclick="return confirm('Ativar acesso de {{ user_obj.first_name|default:user_obj.email }}?')">
+                                <i class="bi bi-unlock me-1"></i>Ativar Acesso
+                            </button>
+                            {% endif %}
+                        </form>
+
+                        <!-- Toggle Escritor -->
+                        <form method="post" action="{% url 'accounts:admin_toggle_writer' user_obj.pk %}">
+                            {% csrf_token %}
+                            {% if user_obj.is_writer %}
+                            <button type="submit" class="btn btn-outline-warning w-100"
+                                    style="font-size:12px; padding:10px;"
+                                    onclick="return confirm('Remover papel de escritor de {{ user_obj.first_name|default:user_obj.email }}?')">
+                                <i class="bi bi-pen me-1"></i>Remover Escritor
+                            </button>
+                            {% else %}
+                            <button type="submit" class="btn btn-outline-primary w-100"
+                                    style="font-size:12px; padding:10px;"
+                                    onclick="return confirm('Tornar {{ user_obj.first_name|default:user_obj.email }} um escritor?')">
+                                <i class="bi bi-pen me-1"></i>Tornar Escritor
+                            </button>
+                            {% endif %}
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

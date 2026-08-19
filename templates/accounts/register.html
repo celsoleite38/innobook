@@ -62,6 +62,18 @@
                                 <div style="font-size:12px; color:#8b2020;">{{ form.password2.errors }}</div>
                                 {% endif %}
                             </div>
+                            <div class="col-12">
+                                <div class="form-check" style="padding: 0.5rem 0;">
+                                    {{ form.quer_ser_escritor }}
+                                    <label class="form-check-label" for="{{ form.quer_ser_escritor.id_for_label }}"
+                                           style="font-size:14px; color:#1a1a2e; cursor:pointer;">
+                                        SOU ESCRITOR
+                                    </label>
+                                    <div style="font-size:16px; color:#888; margin-top:4px; margin-left:1.5rem;">
+                                        Marque <STRONG> SOU ESCRITOR</STRONG> se deseja vender ebooks na plataforma
+                                    </div>
+                                </div>
+                            </div>
                             {% if form.non_field_errors %}
                             <div class="col-12">
                                 <div class="alert alert-danger" style="font-size:13px;">
