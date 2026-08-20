@@ -21,6 +21,13 @@
                             </div>
                         </div>
                         {% endif %}
+                        {% if form.errors %}
+                        <div class="col-12">
+                            <div class="alert alert-danger">
+                                Corrija os erros abaixo antes de continuar.
+                            </div>
+                        </div>
+                        {% endif %}
 
                         <div class="col-12">
                             <label class="form-label fw-semibold">Título *</label>
@@ -146,6 +153,16 @@
                                         <div class="text-danger small mt-1">{{ form.physical_height_cm.errors|striptags }}</div>
                                         {% endif %}
                                     </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-semibold">
+                                            ISBN Físico
+                                            <span class="text-muted fw-normal">(obrigatório se preço físico preenchido)</span>
+                                        </label>
+                                        {{ form.isbn_physical }}
+                                        {% if form.isbn_physical.errors %}
+                                        <div class="text-danger small mt-1">{{ form.isbn_physical.errors|striptags }}</div>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -185,6 +202,17 @@
                             {% endif %}
                         </div>
 
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                ISBN PDF
+                                <span class="text-muted fw-normal">(obrigatório se PDF enviado)</span>
+                            </label>
+                            {{ form.isbn_pdf }}
+                            {% if form.isbn_pdf.errors %}
+                            <div class="text-danger small mt-1">{{ form.isbn_pdf.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+
                         <div class="col-12">
                             <label class="form-label fw-semibold">
                                 Preview gratuito
@@ -214,6 +242,17 @@
                             {% endif %}
                         </div>
 
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                ISBN EPUB
+                                <span class="text-muted fw-normal">(obrigatório se EPUB enviado)</span>
+                            </label>
+                            {{ form.isbn_epub }}
+                            {% if form.isbn_epub.errors %}
+                            <div class="text-danger small mt-1">{{ form.isbn_epub.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+
                         <div class="col-12">
                             <label class="form-label fw-semibold">
                                 <i class="bi bi-tablet me-1"></i>MOBI — Kindle
@@ -230,14 +269,18 @@
                             {% endif %}
                         </div>
 
-                        {% if form.errors %}
-                        <div class="col-12">
-                            <div class="alert alert-danger">
-                                Corrija os erros abaixo antes de continuar.
-                            </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                ISBN MOBI (Kindle)
+                                <span class="text-muted fw-normal">(obrigatório se MOBI enviado)</span>
+                            </label>
+                            {{ form.isbn_mobi }}
+                            {% if form.isbn_mobi.errors %}
+                            <div class="text-danger small mt-1">{{ form.isbn_mobi.errors|striptags }}</div>
+                            {% endif %}
                         </div>
-                        {% endif %}
 
+                        
                         <div class="col-12 d-flex gap-2">
                             <button type="submit" class="btn btn-primary px-5">
                                 <i class="bi bi-check-lg"></i> Salvar
