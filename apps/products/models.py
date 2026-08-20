@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.utils.text import slugify
 
 from core.storages import ProtectedFileSystemStorage
@@ -72,6 +73,24 @@ class Ebook(models.Model):
     slug        = models.SlugField(unique=True, blank=True, max_length=220)
     description = models.TextField(verbose_name='Descrição')
     cover       = models.ImageField(upload_to='covers/', verbose_name='Capa')
+
+    # ISBN por formato
+    isbn_physical = models.CharField(
+        max_length=13, blank=True, verbose_name='ISBN Físico',
+        help_text='ISBN da versão física. Obrigatório se o arquivo físico for enviado.'
+    )
+    isbn_pdf = models.CharField(
+        max_length=13, blank=True, verbose_name='ISBN PDF',
+        help_text='ISBN da versão PDF. Obrigatório se o arquivo PDF for enviado.'
+    )
+    isbn_epub = models.CharField(
+        max_length=13, blank=True, verbose_name='ISBN EPUB',
+        help_text='ISBN da versão EPUB. Obrigatório se o arquivo EPUB for enviado.'
+    )
+    isbn_mobi = models.CharField(
+        max_length=13, blank=True, verbose_name='ISBN MOBI (Kindle)',
+        help_text='ISBN da versão MOBI. Obrigatório se o arquivo MOBI for enviado.'
+    )
 
     # Arquivo protegido (PDF real — nunca público! fica fora do MEDIA_ROOT)
     file        = models.FileField(
@@ -168,6 +187,51 @@ class Ebook(models.Model):
         verbose_name = 'eBook'
         verbose_name_plural = 'eBooks'
         ordering = ['-created_at']
+
+    def clean(self):
+        """Valida ISBNs: obrigatório se arquivo enviado, único globalmente."""
+        super().clean()
+        errors = {}
+
+        isbn_map = {
+            'isbn_pdf': ('file', 'PDF'),
+            'isbn_epub': ('file_epub', 'EPUB'),
+            'isbn_mobi': ('file_mobi', 'MOBI'),
+            'isbn_physical': ('physical_price', 'Físico'),
+        }
+
+        for isbn_field, (file_field, label) in isbn_map.items():
+            isbn_value = getattr(self, isbn_field, '').strip() if getattr(self, isbn_field, '') else ''
+            file_value = getattr(self, file_field, None)
+
+            if file_value and not isbn_value:
+                errors[isbn_field] = f'O ISBN {label} é obrigatório quando o arquivo é enviado.'
+            if isbn_value and len(isbn_value) not in (10, 13):
+                errors[isbn_field] = f'O ISBN {label} deve ter 10 ou 13 caracteres.'
+
+        all_isbn_fields = ['isbn_physical', 'isbn_pdf', 'isbn_epub', 'isbn_mobi']
+        for isbn_field in all_isbn_fields:
+            isbn_value = getattr(self, isbn_field, '').strip() if getattr(self, isbn_field, '') else ''
+            if not isbn_value:
+                continue
+
+            qs = Ebook.objects.filter(**{isbn_field: isbn_value})
+            if self.pk:
+                qs = qs.exclude(pk=self.pk)
+            if qs.exists():
+                errors[isbn_field] = f'Este ISBN já está em uso em outro eBook.'
+
+            check_fields = [f for f in all_isbn_fields if f != isbn_field]
+            for other_field in check_fields:
+                other_qs = Ebook.objects.filter(**{other_field: isbn_value})
+                if self.pk:
+                    other_qs = other_qs.exclude(pk=self.pk)
+                if other_qs.exists():
+                    errors[isbn_field] = f'Este ISBN já está cadastrado no campo {other_field} de outro eBook.'
+                    break
+
+        if errors:
+            raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
         if not self.slug:

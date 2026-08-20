@@ -897,6 +897,7 @@ def admin_commissions_view(request):
 
     config     = PlatformConfig.get()
     commission = config.commission_percent / 100
+    fixed_fee  = config.fixed_fee or 0
 
     # Agrupa vendas por produtor
     sales = Order.objects.filter(
@@ -931,10 +932,12 @@ def admin_commissions_view(request):
 
     for s in sales:
         gross      = s['gross'] or 0
-        comm       = gross * commission
+        orders     = s['total_orders'] or 0
+        comm_pct   = gross * commission
+        comm_fixed = fixed_fee * orders
+        comm       = comm_pct + comm_fixed
         net        = gross - comm
         freight    = s['freight'] or 0
-        # Frete só pertence ao escritor que usa a conta própria no ME
         freight_credit = freight if not shipping_modes.get(
             s['ebook__author__id'], True
         ) else 0
@@ -944,7 +947,6 @@ def admin_commissions_view(request):
         total_net_all        += net
         total_freight_all    += freight
 
-        # Saques já realizados pelo produtor (somente PAGO — com comprovante)
         withdrawn = WithdrawRequest.objects.filter(
             producer_id = s['ebook__author__id'],
             status      = 'paid'
@@ -956,7 +958,7 @@ def admin_commissions_view(request):
                           or s['ebook__author__username'],
             'username'  : s['ebook__author__username'],
             'email'     : s['ebook__author__email'],
-            'orders'    : s['total_orders'],
+            'orders'    : orders,
             'gross'     : gross,
             'commission': comm,
             'net'       : net,
@@ -976,6 +978,7 @@ def admin_commissions_view(request):
         'producers'         : producers,
         'totals'            : totals,
         'commission_percent': config.commission_percent,
+        'fixed_fee'         : config.fixed_fee,
     })
 
 

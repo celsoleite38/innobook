@@ -85,7 +85,7 @@
                     </p>
                     <p style="font-size:11px; letter-spacing:1px; text-transform:uppercase;
                                color:#aaa; margin:0;">
-                        Total comissões ({{ commission_percent }}%)
+                        Total comissões ({% if fixed_fee %}{{ commission_percent }}% + R$ {{ fixed_fee|floatformat:2 }}/venda{% else %}{{ commission_percent }}%{% endif %})
                     </p>
                 </div>
             </div>
@@ -128,7 +128,7 @@
                     </h5>
                 </div>
                 <small style="font-size:11px; color:#888;">
-                    Comissão da plataforma: {{ commission_percent }}%
+                    Comissão: {{ commission_percent }}%{% if fixed_fee %} + R$ {{ fixed_fee|floatformat:2 }}/venda{% endif %}
                 </small>
             </div>
 

@@ -54,10 +54,31 @@ class PaymentAdmin(admin.ModelAdmin):
 
 @admin.register(PlatformConfig)
 class PlatformConfigAdmin(admin.ModelAdmin):
-    list_display = ['commission_percent', 'min_withdraw', 'updated_at']
+    list_display = [
+        'commission_percent', 'fixed_fee', 'min_withdraw',
+        'max_upload_size_mb', 'max_cover_size_mb',
+        'max_preview_size_mb', 'updated_at'
+    ]
+
+    fieldsets = (
+        ('Financeiro', {
+            'fields': ('commission_percent', 'fixed_fee', 'min_withdraw', 'withdraw_info')
+        }),
+        ('Termos da Loja', {
+            'fields': ('terms_enabled', 'store_terms'),
+            'description': 'Configure os termos que escritores devem aceitar antes de publicar.'
+        }),
+        ('Limites de Upload', {
+            'fields': (
+                'max_upload_size_mb',
+                'max_cover_size_mb',
+                'max_preview_size_mb',
+            ),
+            'description': 'Tamanho máximo permitido para cada tipo de arquivo (em MB).'
+        }),
+    )
 
     def has_add_permission(self, request):
-        # Só permite 1 registro
         return not PlatformConfig.objects.exists()
 
     def has_delete_permission(self, request, obj=None):

@@ -29,7 +29,7 @@ from .security import (
 from apps.products.models import Ebook, EbookBonus
 from apps.products.forms import EbookForm, EbookBonusForm
 from apps.payments.models import Order, WithdrawRequest, PlatformConfig
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, Q
 from apps.payments.forms import BankDataForm, WithdrawForm
 from apps.payments.finance import get_producer_financial, get_producer_sales_by_ebook
 
@@ -97,6 +97,11 @@ def producer_dashboard_view(request):
 @login_required
 @producer_required
 def ebook_create_view(request):
+    config = PlatformConfig.get()
+    if config.terms_enabled and not request.user.terms_accepted:
+        messages.warning(request, 'Você precisa aceitar os Termos da Loja antes de publicar.')
+        return redirect('accounts:profile')
+
     form = EbookForm(request.POST or None, request.FILES or None)
     if request.method == 'POST':
         if form.is_valid():
@@ -116,6 +121,11 @@ def ebook_create_view(request):
 @login_required
 @producer_required
 def ebook_edit_view(request, pk):
+    config = PlatformConfig.get()
+    if config.terms_enabled and not request.user.terms_accepted:
+        messages.warning(request, 'Você precisa aceitar os Termos da Loja antes de editar.')
+        return redirect('accounts:profile')
+
     ebook = get_object_or_404(Ebook, pk=pk, author=request.user)
     form  = EbookForm(
         request.POST  or None,
@@ -379,14 +389,27 @@ def dashboard_view(request):
 
 @login_required
 def profile_view(request):
+    config = PlatformConfig.get()
+
+    if request.method == 'POST' and 'accept_terms' in request.POST:
+        if config.terms_enabled:
+            request.user.terms_accepted = True
+            request.user.save(update_fields=['terms_accepted'])
+            messages.success(request, 'Termos da Loja aceitos com sucesso!')
+        return redirect('accounts:profile')
+
     form = ProfileForm(request.POST or None, request.FILES or None, instance=request.user)
-    if request.method == 'POST':
+    if request.method == 'POST' and 'accept_terms' not in request.POST:
         if form.is_valid():
             form.save()
             messages.success(request, 'Perfil atualizado com sucesso!')
             return redirect('accounts:profile')
 
-    return render(request, 'accounts/profile.html', {'form': form})
+    return render(request, 'accounts/profile.html', {
+        'form': form,
+        'terms_enabled': config.terms_enabled,
+        'store_terms': config.store_terms,
+    })
 
 
 @login_required
@@ -635,3 +658,85 @@ def admin_toggle_writer_view(request, pk):
     status = 'agora é escritor' if user_obj.is_writer else 'não é mais escritor'
     messages.success(request, f'{user_obj.first_name or user_obj.email} {status}.')
     return redirect('accounts:admin_user_detail', pk=pk)
+
+
+# ---------------------------------------------------------------------------
+# Painel de Administração — Gestão de Livros
+# ---------------------------------------------------------------------------
+
+@staff_or_superuser_required
+def admin_books_list_view(request):
+    status_filter = request.GET.get('status', '')
+    search = request.GET.get('q', '')
+
+    ebooks = Ebook.objects.select_related('author').order_by('-created_at')
+
+    if status_filter == 'pending':
+        ebooks = ebooks.filter(status='pending')
+    elif status_filter == 'published':
+        ebooks = ebooks.filter(status='published')
+    elif status_filter == 'rejected':
+        ebooks = ebooks.filter(status='rejected')
+    elif status_filter == 'draft':
+        ebooks = ebooks.filter(status='draft')
+
+    if search:
+        ebooks = ebooks.filter(
+            Q(title__icontains=search)
+        ) | ebooks.filter(
+            Q(author__first_name__icontains=search)
+        ) | ebooks.filter(
+            Q(author__last_name__icontains=search)
+        ) | ebooks.filter(
+            Q(author__email__icontains=search)
+        )
+
+    paginator = Paginator(ebooks, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    stats = {
+        'total': Ebook.objects.count(),
+        'pending': Ebook.objects.filter(status='pending').count(),
+        'published': Ebook.objects.filter(status='published').count(),
+        'rejected': Ebook.objects.filter(status='rejected').count(),
+    }
+
+    return render(request, 'admin_panel/books.html', {
+        'page_obj': page_obj,
+        'stats': stats,
+        'search': search,
+        'status_filter': status_filter,
+    })
+
+
+@staff_or_superuser_required
+def admin_book_detail_view(request, pk):
+    ebook = get_object_or_404(Ebook.objects.select_related('author'), pk=pk)
+    return render(request, 'admin_panel/book_detail.html', {
+        'ebook': ebook,
+    })
+
+
+@staff_or_superuser_required
+def admin_book_approve_view(request, pk):
+    if request.method != 'POST':
+        return redirect('accounts:admin_books')
+
+    ebook = get_object_or_404(Ebook, pk=pk)
+    ebook.status = 'published'
+    ebook.save(update_fields=['status'])
+    messages.success(request, f'"{ebook.title}" foi aprovado e publicado.')
+    return redirect('accounts:admin_book_detail', pk=pk)
+
+
+@staff_or_superuser_required
+def admin_book_reject_view(request, pk):
+    if request.method != 'POST':
+        return redirect('accounts:admin_books')
+
+    ebook = get_object_or_404(Ebook, pk=pk)
+    ebook.status = 'rejected'
+    ebook.save(update_fields=['status'])
+    messages.success(request, f'"{ebook.title}" foi rejeitado.')
+    return redirect('accounts:admin_book_detail', pk=pk)

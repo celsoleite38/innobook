@@ -34,6 +34,7 @@ class User(AbstractUser):
     is_writer          = models.BooleanField(default=False, verbose_name='É escritor')
     producer_requested = models.BooleanField(default=False, verbose_name='Solicitou ser produtor')
     producer_approved  = models.BooleanField(default=False, verbose_name='Produtor aprovado')
+    terms_accepted     = models.BooleanField(default=False, verbose_name='Aceitou os termos da loja')
 
     # Proteção contra força bruta
     failed_login_count = models.PositiveIntegerField(default=0, verbose_name='Tentativas de login falhas')

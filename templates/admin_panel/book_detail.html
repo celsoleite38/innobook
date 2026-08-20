@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+{% block title %}Detalhes do Livro — Editora Orange{% endblock %}
+
+{% block content %}
+
+<section style="background:#1a1a2e; padding:32px 0;">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <p style="color:#c9a84c; font-size:11px; letter-spacing:3px;
+                          text-transform:uppercase; margin-bottom:8px;">
+                    Administrador
+                </p>
+                <h1 style="font-family:'Playfair Display',serif; color:#f5f0e8;
+                           font-size:28px; font-weight:600; margin:0;">
+                    Detalhes do Livro
+                </h1>
+            </div>
+            <a href="{% url 'accounts:admin_books' %}"
+               class="btn-outline-gold"
+               style="padding:8px 18px; font-size:11px;">
+                <i class="bi bi-arrow-left me-1"></i>Voltar
+            </a>
+        </div>
+    </div>
+</section>
+
+<section class="py-5 bg-cream">
+    <div class="container">
+        <div class="row g-4">
+
+            <!-- Informações do Livro -->
+            <div class="col-md-8">
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:2rem;">
+
+                    <div class="d-flex align-items-center gap-4 mb-4">
+                        {% if ebook.cover %}
+                        <img src="{{ ebook.cover.url }}" alt="capa"
+                             style="width:80px; height:112px; object-fit:cover;
+                                    border-radius:6px; box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+                        {% else %}
+                        <div style="width:80px; height:112px; background:#f0f0f0;
+                                    border-radius:6px; display:flex; align-items:center;
+                                    justify-content:center;">
+                            <i class="bi bi-book" style="font-size:28px; color:#aaa;"></i>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <h2 style="font-family:'Playfair Display',serif; font-size:22px;
+                                       font-weight:600; color:#1a1a2e; margin-bottom:4px;">
+                                {{ ebook.title }}
+                            </h2>
+                            <p style="font-size:13px; color:#888; margin:0;">
+                                por {{ ebook.author.get_full_name|default:ebook.author.email }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div style="border-top:0.5px solid #e0d8cc; padding-top:1.5rem;">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <p style="font-size:11px; letter-spacing:1px;
+                                          text-transform:uppercase; color:#888; margin-bottom:4px;">
+                                    Categoria
+                                </p>
+                                <p style="font-size:14px; color:#1a1a2e; margin:0;">
+                                    {{ ebook.category.name|default:"—" }}
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p style="font-size:11px; letter-spacing:1px;
+                                          text-transform:uppercase; color:#888; margin-bottom:4px;">
+                                    Preço Digital
+                                </p>
+                                <p style="font-size:14px; color:#1a1a2e; margin:0; font-weight:600;">
+                                    R$ {{ ebook.price|floatformat:2 }}
+                                </p>
+                            </div>
+                            {% if ebook.discount_price %}
+                            <div class="col-md-6">
+                                <p style="font-size:11px; letter-spacing:1px;
+                                          text-transform:uppercase; color:#888; margin-bottom:4px;">
+                                    Preço com Desconto
+                                </p>
+                                <p style="font-size:14px; color:#c9a84c; margin:0; font-weight:600;">
+                                    R$ {{ ebook.discount_price|floatformat:2 }}
+                                </p>
+                            </div>
+                            {% endif %}
+                            <div class="col-md-6">
+                                <p style="font-size:11px; letter-spacing:1px;
+                                          text-transform:uppercase; color:#888; margin-bottom:4px;">
+                                    Enviado em
+                                </p>
+                                <p style="font-size:14px; color:#1a1a2e; margin:0;">
+                                    {{ ebook.created_at|date:"d/m/Y H:i" }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if ebook.description %}
+                    <div style="border-top:0.5px solid #e0d8cc; padding-top:1.5rem; margin-top:1.5rem;">
+                        <p style="font-size:11px; letter-spacing:1px;
+                                  text-transform:uppercase; color:#888; margin-bottom:8px;">
+                            Descrição
+                        </p>
+                        <p style="font-size:14px; color:#1a1a2e; margin:0; line-height:1.7;">
+                            {{ ebook.description }}
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    <!-- ISBNs -->
+                    {% if ebook.isbn_physical or ebook.isbn_pdf or ebook.isbn_epub or ebook.isbn_mobi %}
+                    <div style="border-top:0.5px solid #e0d8cc; padding-top:1.5rem; margin-top:1.5rem;">
+                        <p style="font-size:11px; letter-spacing:1px;
+                                  text-transform:uppercase; color:#888; margin-bottom:8px;">
+                            ISBNs
+                        </p>
+                        <div class="row g-2">
+                            {% if ebook.isbn_physical %}
+                            <div class="col-md-6">
+                                <small style="color:#888;">Físico:</small>
+                                <p style="font-size:13px; color:#1a1a2e; margin:0;">{{ ebook.isbn_physical }}</p>
+                            </div>
+                            {% endif %}
+                            {% if ebook.isbn_pdf %}
+                            <div class="col-md-6">
+                                <small style="color:#888;">PDF:</small>
+                                <p style="font-size:13px; color:#1a1a2e; margin:0;">{{ ebook.isbn_pdf }}</p>
+                            </div>
+                            {% endif %}
+                            {% if ebook.isbn_epub %}
+                            <div class="col-md-6">
+                                <small style="color:#888;">ePub:</small>
+                                <p style="font-size:13px; color:#1a1a2e; margin:0;">{{ ebook.isbn_epub }}</p>
+                            </div>
+                            {% endif %}
+                            {% if ebook.isbn_mobi %}
+                            <div class="col-md-6">
+                                <small style="color:#888;">Mobi:</small>
+                                <p style="font-size:13px; color:#1a1a2e; margin:0;">{{ ebook.isbn_mobi }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
+
+            <!-- Sidebar: Status e Ações -->
+            <div class="col-md-4">
+
+                <!-- Status -->
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:1.5rem; margin-bottom:1rem;">
+                    <p style="font-size:11px; letter-spacing:1px; text-transform:uppercase;
+                              color:#888; margin-bottom:1rem;">
+                        Status
+                    </p>
+
+                    <div class="d-flex flex-column gap-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span style="font-size:13px; color:#1a1a2e;">Estado</span>
+                            <span style="font-size:10px; padding:4px 12px;
+                                         border-radius:20px; font-weight:500;
+                                         {% if ebook.status == 'published' %}
+                                             background:#f0f7f0; color:#2d5a2d;
+                                             border:0.5px solid #b8d8b8;
+                                         {% elif ebook.status == 'pending' %}
+                                             background:#fff8e6; color:#8b6914;
+                                             border:0.5px solid #e8d5a3;
+                                         {% elif ebook.status == 'rejected' %}
+                                             background:#fdf0f0; color:#8b2020;
+                                             border:0.5px solid #e8b8b8;
+                                         {% else %}
+                                             background:#f5f5f5; color:#888;
+                                             border:0.5px solid #e0e0e0;
+                                         {% endif %}">
+                                {% if ebook.status == 'published' %}✓ Publicado
+                                {% elif ebook.status == 'pending' %}⏳ Pendente
+                                {% elif ebook.status == 'rejected' %}✗ Rejeitado
+                                {% else %}Rascunho
+                                {% endif %}
+                            </span>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span style="font-size:13px; color:#1a1a2e;">Autor</span>
+                            <a href="{% url 'accounts:admin_user_detail' ebook.author.pk %}"
+                               style="font-size:12px; color:#c9a84c; text-decoration:none;">
+                                {{ ebook.author.get_full_name|default:ebook.author.email }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ações -->
+                {% if ebook.status == 'pending' %}
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:1.5rem;">
+                    <p style="font-size:11px; letter-spacing:1px; text-transform:uppercase;
+                              color:#888; margin-bottom:1rem;">
+                        Ações de Aprovação
+                    </p>
+
+                    <div class="d-flex flex-column gap-2">
+                        <form method="post" action="{% url 'accounts:admin_book_approve' ebook.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success w-100"
+                                    style="font-size:12px; padding:10px;"
+                                    onclick="return confirm('Aprovar e publicar &quot;{{ ebook.title }}&quot;?')">
+                                <i class="bi bi-check-circle me-1"></i>Aprovar e Publicar
+                            </button>
+                        </form>
+
+                        <form method="post" action="{% url 'accounts:admin_book_reject' ebook.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger w-100"
+                                    style="font-size:12px; padding:10px;"
+                                    onclick="return confirm('Rejeitar &quot;{{ ebook.title }}&quot;?')">
+                                <i class="bi bi-x-circle me-1"></i>Rejeitar
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% elif ebook.status == 'published' %}
+                <div style="background:#fff; border:0.5px solid #e0d8cc;
+                            border-radius:6px; padding:1.5rem;">
+                    <p style="font-size:11px; letter-spacing:1px; text-transform:uppercase;
+                              color:#888; margin-bottom:1rem;">
+                        Ações
+                    </p>
+                    <form method="post" action="{% url 'accounts:admin_book_reject' ebook.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-danger w-100"
+                                style="font-size:12px; padding:10px;"
+                                onclick="return confirm('Remover publicação de &quot;{{ ebook.title }}&quot;?')">
+                            <i class="bi bi-x-circle me-1"></i>Remover Publicação
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

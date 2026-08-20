@@ -47,4 +47,10 @@ urlpatterns = [
     path('admin-painel/usuarios/<int:pk>/', views.admin_user_detail_view, name='admin_user_detail'),
     path('admin-painel/usuarios/<int:pk>/toggle-access/', views.admin_toggle_access_view, name='admin_toggle_access'),
     path('admin-painel/usuarios/<int:pk>/toggle-writer/', views.admin_toggle_writer_view, name='admin_toggle_writer'),
+
+    # Painel de Administração — Gestão de Livros
+    path('admin-painel/livros/', views.admin_books_list_view, name='admin_books'),
+    path('admin-painel/livros/<int:pk>/', views.admin_book_detail_view, name='admin_book_detail'),
+    path('admin-painel/livros/<int:pk>/aprovar/', views.admin_book_approve_view, name='admin_book_approve'),
+    path('admin-painel/livros/<int:pk>/rejeitar/', views.admin_book_reject_view, name='admin_book_reject'),
 ]

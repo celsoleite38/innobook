@@ -69,6 +69,12 @@
                                 <i class="bi bi-people me-2"></i>Gestão de Usuários
                             </a>
                         </li>
+                        <li>
+                            <a class="dropdown-item py-2" href="{% url 'accounts:admin_books' %}"
+                            style="color:#c9a84c;">
+                                <i class="bi bi-book me-2"></i>Gestão de Livros
+                            </a>
+                        </li>
                         {% if user.is_superuser %}
                         <li>
                             <a class="dropdown-item py-2" href="{% url 'payments:admin_withdraws' %}"

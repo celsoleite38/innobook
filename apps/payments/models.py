@@ -149,9 +149,11 @@ class Order(models.Model):
         ordering = ['-created_at']
 
     def save(self, *args, **kwargs):
-        # Calcula automaticamente taxa e valor do produtor (10% plataforma)
         if self.amount and not self.platform_fee:
-            self.platform_fee   = self.amount * 10 / 100
+            config = PlatformConfig.get()
+            commission = config.commission_percent / 100
+            fixed = config.fixed_fee or Decimal('0')
+            self.platform_fee    = self.amount * Decimal(str(commission)) + fixed
             self.producer_amount = self.amount - self.platform_fee
         super().save(*args, **kwargs)
 
@@ -244,6 +246,39 @@ class PlatformConfig(models.Model):
         verbose_name='Instruções de saque',
         default='Os saques são processados em até 5 dias úteis via PIX.'
     )
+    max_upload_size_mb  = models.PositiveIntegerField(
+        default=5,
+        verbose_name='Tamanho máximo de upload — eBooks (MB)'
+    )
+    max_cover_size_mb   = models.PositiveIntegerField(
+        default=2,
+        verbose_name='Tamanho máximo de upload — Capas (MB)'
+    )
+    max_preview_size_mb = models.PositiveIntegerField(
+        default=3,
+        verbose_name='Tamanho máximo de upload — Preview (MB)'
+    )
+
+    # Taxa fixa por venda
+    fixed_fee = models.DecimalField(
+        max_digits=8, decimal_places=2,
+        default=0,
+        verbose_name='Taxa fixa por venda (R$)',
+        help_text='Valor cobrado por cada ebook vendido, além da comissão percentual.'
+    )
+
+    # Termos da loja
+    terms_enabled = models.BooleanField(
+        default=False,
+        verbose_name='Termos ativados',
+        help_text='Se ativo, escritores devem aceitar os termos antes de publicar.'
+    )
+    store_terms = models.TextField(
+        blank=True,
+        verbose_name='Termos da Loja',
+        help_text='Texto dos termos que o escritor deve aceitar.'
+    )
+
     updated_at        = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -255,7 +290,6 @@ class PlatformConfig(models.Model):
 
     @classmethod
     def get(cls):
-        """Retorna a configuração singleton."""
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
 

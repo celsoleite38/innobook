@@ -52,6 +52,11 @@ class EbookAdmin(admin.ModelAdmin):
         ('Preços Digitais', {
             'fields': ('price', 'discount_price')
         }),
+        ('ISBNs', {
+            'fields': ('isbn_physical', 'isbn_pdf', 'isbn_epub', 'isbn_mobi'),
+            'description': 'ISBNs por formato. Preencha o ISBN correspondente ao formato disponível.',
+            'classes': ('collapse',)
+        }),
         ('Livro Físico', {
             'fields': ('physical_price', 'combo_price', 'physical_stock',
                        'physical_weight_g', 'physical_length_cm',

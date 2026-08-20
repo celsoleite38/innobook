@@ -76,6 +76,37 @@
                             {{ form.avatar }}
                         </div>
                        
+                        {% if terms_enabled and user.is_writer %}
+                        <div class="col-12">
+                            <div class="card p-4 mt-2">
+                                <h5 class="fw-bold mb-3">Termos da Loja</h5>
+                                {% if user.terms_accepted %}
+                                <div class="alert alert-success mb-3" style="font-size:13px;">
+                                    <i class="bi bi-check-circle-fill me-1"></i>
+                                    Você aceitou os Termos da Loja.
+                                </div>
+                                {% else %}
+                                <div class="alert alert-warning mb-3" style="font-size:13px;">
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                    Você precisa aceitar os Termos da Loja para publicar ebooks.
+                                </div>
+                                {% endif %}
+                                <div style="max-height:300px; overflow-y:auto; border:1px solid #ddd; border-radius:8px; padding:16px; margin-bottom:16px; font-size:14px; background:#fafafa;">
+                                    {{ store_terms|linebreaksbr }}
+                                </div>
+                                {% if not user.terms_accepted %}
+                                <form method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accept_terms" value="1">
+                                    <button type="submit" class="btn btn-warning fw-semibold w-100 py-2">
+                                        Aceitar os Termos da Loja
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+
                         <div class="col-12">
                             <button type="submit" class="btn btn-primary w-100 py-2">
                                 Salvar alterações
