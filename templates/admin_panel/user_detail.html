@@ -183,6 +183,17 @@
                             <i class="bi bi-x-circle-fill" style="color:#8b2020;"></i>
                             {% endif %}
                         </div>
+
+                        {% if user_obj.is_writer %}
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span style="font-size:13px; color:#1a1a2e;">Aceitou Termos</span>
+                            {% if user_obj.terms_accepted %}
+                            <i class="bi bi-check-circle-fill" style="color:#2d5a2d;"></i>
+                            {% else %}
+                            <i class="bi bi-x-circle-fill" style="color:#8b2020;"></i>
+                            {% endif %}
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
 
