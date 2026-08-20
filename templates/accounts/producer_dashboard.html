@@ -122,6 +122,15 @@
                     <small class="text-muted">R$ {{ ebook.price }}</small>
                 </div>
                 <div class="d-flex flex-column gap-1">
+                    {% if ebook.status == 'pending' and terms_enabled and user.terms_accepted %}
+                    <form method="post" action="{% url 'accounts:producer_book_publish' ebook.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success btn-sm w-100"
+                                onclick="return confirm('Publicar &quot;{{ ebook.title }}&quot;?')">
+                            <i class="bi bi-check-circle me-1"></i>Publicar
+                        </button>
+                    </form>
+                    {% endif %}
                     <a href="{% url 'accounts:ebook_edit' ebook.pk %}" class="btn-outline-gold"
                        class="btn btn-outline-primary btn-sm">
                         <i class="bi bi-pencil">Editar</i>

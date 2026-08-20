@@ -38,6 +38,7 @@ urlpatterns = [
     path('producer/saque/',                          views.withdraw_request_view,name='withdraw'),
     path('producer/ebook/new/',        views.ebook_create_view, name='ebook_create'),
     path('producer/ebook/<int:pk>/edit/', views.ebook_edit_view, name='ebook_edit'),
+    path('producer/publish/<int:pk>/', views.producer_book_publish_view, name='producer_book_publish'),
     path('producer/ebook/<int:pk>/bonus/',      views.bonus_list_view,   name='ebook_bonuses'),
     path('producer/ebook/<int:ebook_pk>/bonus/new/', views.bonus_create_view, name='bonus_create'),
     path('producer/bonus/<int:pk>/delete/',     views.bonus_delete_view, name='bonus_delete'),

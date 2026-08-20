@@ -77,8 +77,9 @@ def producer_required(view_func):
 @producer_required
 def producer_dashboard_view(request):
     from apps.payments.finance import get_producer_financial
-    ebooks    = request.user.ebooks.all().order_by('-created_at')
-    financial = get_producer_financial(request.user)
+    config     = PlatformConfig.get()
+    ebooks     = request.user.ebooks.all().order_by('-created_at')
+    financial  = get_producer_financial(request.user)
 
     sales_per_ebook = Order.objects.filter(
         ebook__author=request.user,
@@ -92,6 +93,7 @@ def producer_dashboard_view(request):
         'ebooks'         : ebooks,
         'financial'      : financial,
         'sales_per_ebook': sales_per_ebook,
+        'terms_enabled'  : config.terms_enabled,
     })
 
 
@@ -102,18 +104,24 @@ def ebook_create_view(request):
     if config.terms_enabled and not request.user.terms_accepted:
         messages.warning(request, format_html(
             'Você precisa aceitar os <a href="{}" class="fw-bold">Termos da Loja</a> antes de publicar.',
-            '/profile/#aceitar-termos'
+            reverse('accounts:profile') + '#aceitar-termos'
         ))
-        return redirect('/profile/#aceitar-termos')
+        return redirect(reverse('accounts:profile') + '#aceitar-termos')
 
     form = EbookForm(request.POST or None, request.FILES or None)
     if request.method == 'POST':
         if form.is_valid():
             ebook        = form.save(commit=False)
             ebook.author = request.user
-            ebook.status = Ebook.STATUS_PENDING  # aguarda aprovação do admin
+            if config.terms_enabled and request.user.terms_accepted:
+                ebook.status = Ebook.STATUS_PUBLISHED
+            else:
+                ebook.status = Ebook.STATUS_PENDING
             ebook.save()
-            messages.success(request, 'eBook enviado para aprovação!')
+            if ebook.status == Ebook.STATUS_PUBLISHED:
+                messages.success(request, 'eBook publicado com sucesso!')
+            else:
+                messages.success(request, 'eBook enviado para aprovação!')
             return redirect('accounts:producer')
 
     return render(request, 'accounts/ebook_form.html', {
@@ -129,9 +137,9 @@ def ebook_edit_view(request, pk):
     if config.terms_enabled and not request.user.terms_accepted:
         messages.warning(request, format_html(
             'Você precisa aceitar os <a href="{}" class="fw-bold">Termos da Loja</a> antes de editar.',
-            '/profile/#aceitar-termos'
+            reverse('accounts:profile') + '#aceitar-termos'
         ))
-        return redirect('/profile/#aceitar-termos')
+        return redirect(reverse('accounts:profile') + '#aceitar-termos')
 
     ebook = get_object_or_404(Ebook, pk=pk, author=request.user)
     form  = EbookForm(
@@ -141,7 +149,10 @@ def ebook_edit_view(request, pk):
     )
     if request.method == 'POST':
         if form.is_valid():
-            form.save()
+            ebook = form.save(commit=False)
+            if config.terms_enabled and request.user.terms_accepted:
+                ebook.status = Ebook.STATUS_PUBLISHED
+            ebook.save()
             messages.success(request, 'eBook atualizado!')
             return redirect('accounts:producer')
 
@@ -150,6 +161,22 @@ def ebook_edit_view(request, pk):
         'title': f'Editar — {ebook.title}',
         'ebook': ebook,
     })
+
+
+@login_required
+@producer_required
+def producer_book_publish_view(request, pk):
+    """Escritor publica diretamente seu ebook (se termos aceitos)."""
+    config = PlatformConfig.get()
+    if not (config.terms_enabled and request.user.terms_accepted):
+        messages.error(request, 'Você não tem permissão para publicar.')
+        return redirect('accounts:producer')
+
+    ebook = get_object_or_404(Ebook, pk=pk, author=request.user)
+    ebook.status = Ebook.STATUS_PUBLISHED
+    ebook.save(update_fields=['status'])
+    messages.success(request, f'"{ebook.title}" foi publicado!')
+    return redirect('accounts:producer')
 
 
 def login_view(request):

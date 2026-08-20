@@ -76,19 +76,19 @@ class Ebook(models.Model):
 
     # ISBN por formato
     isbn_physical = models.CharField(
-        max_length=13, blank=True, verbose_name='ISBN Físico',
+        max_length=13, blank=True, null=True, verbose_name='ISBN Físico',
         help_text='ISBN da versão física. Obrigatório se o arquivo físico for enviado.'
     )
     isbn_pdf = models.CharField(
-        max_length=13, blank=True, verbose_name='ISBN PDF',
+        max_length=13, blank=True, null=True, verbose_name='ISBN PDF',
         help_text='ISBN da versão PDF. Obrigatório se o arquivo PDF for enviado.'
     )
     isbn_epub = models.CharField(
-        max_length=13, blank=True, verbose_name='ISBN EPUB',
+        max_length=13, blank=True, null=True, verbose_name='ISBN EPUB',
         help_text='ISBN da versão EPUB. Obrigatório se o arquivo EPUB for enviado.'
     )
     isbn_mobi = models.CharField(
-        max_length=13, blank=True, verbose_name='ISBN MOBI (Kindle)',
+        max_length=13, blank=True, null=True, verbose_name='ISBN MOBI (Kindle)',
         help_text='ISBN da versão MOBI. Obrigatório se o arquivo MOBI for enviado.'
     )
 
