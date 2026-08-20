@@ -64,7 +64,7 @@
 
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">
-                                Preço (R$) *
+                                Preço digital (R$)
                             </label>
                             {{ form.price }}
                             {% if form.price.errors %}
@@ -87,11 +87,12 @@
                             <div class="p-3" style="background:#faf7f1; border:0.5px solid #e0d8cc; border-radius:6px;">
                                 <p class="fw-semibold mb-1">
                                     <i class="bi bi-book me-1"></i>Livro Físico
-                                    <span class="text-muted fw-normal">(opcional)</span>
+                                    <span class="text-muted fw-normal">(obrigatório se não enviar arquivo digital)</span>
                                 </p>
                                 <p class="small text-muted mb-3" style="font-size:12px;">
                                     Preencha para vender a versão impressa. O estoque é controlado por você,
                                     pelo seu painel. Peso e dimensões são usados na cotação do frete.
+                                    Se não enviar arquivos digitais, este preço é obrigatório.
                                 </p>
                                 <div class="row g-3">
                                     <div class="col-md-4">
@@ -167,9 +168,9 @@
 
                         <div class="col-12">
                             <label class="form-label fw-semibold">
-                                Arquivo PDF *
+                                Arquivo PDF
                                 <span class="text-muted fw-normal">
-                                    (arquivo protegido, nunca público)
+                                    (opcional — necessário se vender versão digital)
                                 </span>
                             </label>
                             {% if ebook.file %}

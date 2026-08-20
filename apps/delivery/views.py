@@ -418,10 +418,12 @@ def download_ebook(request, token):
         file_path    = ebook.file_mobi.path
         content_type = 'application/x-mobipocket-ebook'
         extension    = 'mobi'
-    else:
+    elif ebook.file:
         file_path    = ebook.file.path
         content_type = 'application/pdf'
         extension    = 'pdf'
+    else:
+        return HttpResponseForbidden('Arquivo digital não disponível para este eBook.')
 
     if not os.path.exists(file_path):
         return HttpResponseForbidden('Arquivo não encontrado.')

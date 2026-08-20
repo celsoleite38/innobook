@@ -47,7 +47,8 @@ class EbookForm(forms.ModelForm):
         for campo in ('physical_stock', 'physical_weight_g',
                       'physical_length_cm', 'physical_width_cm',
                       'physical_height_cm',
-                      'isbn_physical', 'isbn_pdf', 'isbn_epub', 'isbn_mobi'):
+                      'isbn_physical', 'isbn_pdf', 'isbn_epub', 'isbn_mobi',
+                      'file', 'price'):
             self.fields[campo].required = False
 
     def clean(self):
@@ -62,6 +63,15 @@ class EbookForm(forms.ModelForm):
         for campo, valor in padroes.items():
             if dados.get(campo) is None:
                 dados[campo] = valor
+
+        # Pelo menos um formato deve ser oferecido
+        has_digital = bool(dados.get('file') or dados.get('file_epub') or dados.get('file_mobi'))
+        has_physical = bool(dados.get('physical_price'))
+        if not has_digital and not has_physical:
+            raise forms.ValidationError(
+                'Envie pelo menos um arquivo digital (PDF, EPUB ou MOBI) '
+                'ou informe o preço físico.'
+            )
         return dados
 
     def clean_file(self):

@@ -183,9 +183,15 @@
                 <div style="background:#fff; border:0.5px solid #e0d8cc; border-radius:6px; padding:1.5rem;">
 
                     <div class="d-flex align-items-baseline gap-3 mb-4">
+                        {% if ebook.get_price %}
                         <span id="price-label" style="font-family:'Playfair Display',serif; font-size:36px; color:#c9a84c; font-weight:600;">
                             R$ {{ ebook.get_price }}
                         </span>
+                        {% elif ebook.physical_price %}
+                        <span id="price-label" style="font-family:'Playfair Display',serif; font-size:36px; color:#c9a84c; font-weight:600;">
+                            R$ {{ ebook.physical_price }}
+                        </span>
+                        {% endif %}
                         {% if ebook.discount_price %}
                         <span style="font-size:18px; color:#aaa; text-decoration:line-through;">
                             R$ {{ ebook.price }}
@@ -203,7 +209,8 @@
                             Escolha o formato
                         </p>
                         <div class="row g-2">
-                            <div class="col-4">
+                            {% if ebook.get_price %}
+                            <div class="{% if ebook.has_physical %}col-4{% else %}col-12{% endif %}">
                                 <input type="radio" class="btn-check" name="format"
                                        id="fmt-digital" value="digital" checked
                                        data-price="{{ ebook.get_price }}">
@@ -214,10 +221,12 @@
                                     <strong>R$ {{ ebook.get_price }}</strong>
                                 </label>
                             </div>
-                            <div class="col-4">
+                            {% endif %}
+                            <div class="{% if ebook.get_price %}col-4{% else %}col-12{% endif %}">
                                 <input type="radio" class="btn-check" name="format"
                                        id="fmt-physical" value="physical"
-                                       data-price="{{ ebook.physical_price }}">
+                                       data-price="{{ ebook.physical_price }}"
+                                       {% if not ebook.get_price %}checked{% endif %}>
                                 <label class="d-block text-center p-2 format-selector-label" for="fmt-physical">
                                     <i class="bi bi-book d-block mb-1 text-gold" style="font-size:32px;"></i>
                                     Físico
@@ -225,6 +234,7 @@
                                     <strong>R$ {{ ebook.physical_price }}</strong>
                                 </label>
                             </div>
+                            {% if ebook.get_price %}
                             <div class="col-4">
                                 <input type="radio" class="btn-check" name="format"
                                        id="fmt-combo" value="combo"
@@ -236,6 +246,7 @@
                                     <strong>R$ {{ ebook.get_combo_price }}</strong>
                                 </label>
                             </div>
+                            {% endif %}
                         </div>
                         {% if ebook.physical_stock <= 5 %}
                         <p style="font-size:11px; color:#8a6000; margin-top:8px; margin-bottom:0;">

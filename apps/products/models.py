@@ -96,6 +96,7 @@ class Ebook(models.Model):
     file        = models.FileField(
         storage=protected_storage,
         upload_to='ebooks/',
+        blank=True, null=True,
         verbose_name='Arquivo PDF'
     )
 
@@ -124,7 +125,8 @@ class Ebook(models.Model):
     # Preço e comercial
     price       = models.DecimalField(
         max_digits=8, decimal_places=2,
-        verbose_name='Preço'
+        null=True, blank=True,
+        verbose_name='Preço digital'
     )
     discount_price = models.DecimalField(
         max_digits=8, decimal_places=2,
@@ -189,9 +191,18 @@ class Ebook(models.Model):
         ordering = ['-created_at']
 
     def clean(self):
-        """Valida ISBNs: obrigatório se arquivo enviado, único globalmente."""
+        """Valida: ao menos 1 formato (digital ou físico); ISBNs obrigatórios."""
         super().clean()
         errors = {}
+
+        # Pelo menos um formato deve ser oferecido
+        has_digital  = bool(self.file or self.file_epub or self.file_mobi)
+        has_physical = bool(self.physical_price)
+        if not has_digital and not has_physical:
+            errors['__all__'] = (
+                'Envie pelo menos um arquivo digital (PDF, EPUB ou MOBI) '
+                'ou informe o preço físico.'
+            )
 
         isbn_map = {
             'isbn_pdf': ('file', 'PDF'),
@@ -249,7 +260,9 @@ class Ebook(models.Model):
     
     def get_available_formats(self):
         """Retorna lista de formatos disponíveis."""
-        formats = ['PDF']
+        formats = []
+        if self.file:
+            formats.append('PDF')
         if self.file_epub:
             formats.append('EPUB')
         if self.file_mobi:
