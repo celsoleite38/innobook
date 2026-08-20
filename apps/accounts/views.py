@@ -7,6 +7,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.conf import settings
 from django.shortcuts import get_object_or_404, render, redirect
 from django.utils.encoding import force_str
+from django.utils.html import format_html
 from django.utils.http import urlsafe_base64_decode, url_has_allowed_host_and_scheme
 from django.urls import reverse
 from django.core.paginator import Paginator
@@ -99,8 +100,11 @@ def producer_dashboard_view(request):
 def ebook_create_view(request):
     config = PlatformConfig.get()
     if config.terms_enabled and not request.user.terms_accepted:
-        messages.warning(request, 'Você precisa aceitar os Termos da Loja antes de publicar.')
-        return redirect('accounts:profile')
+        messages.warning(request, format_html(
+            'Você precisa aceitar os <a href="{}" class="fw-bold">Termos da Loja</a> antes de publicar.',
+            '/profile/#aceitar-termos'
+        ))
+        return redirect('/profile/#aceitar-termos')
 
     form = EbookForm(request.POST or None, request.FILES or None)
     if request.method == 'POST':
@@ -123,8 +127,11 @@ def ebook_create_view(request):
 def ebook_edit_view(request, pk):
     config = PlatformConfig.get()
     if config.terms_enabled and not request.user.terms_accepted:
-        messages.warning(request, 'Você precisa aceitar os Termos da Loja antes de editar.')
-        return redirect('accounts:profile')
+        messages.warning(request, format_html(
+            'Você precisa aceitar os <a href="{}" class="fw-bold">Termos da Loja</a> antes de editar.',
+            '/profile/#aceitar-termos'
+        ))
+        return redirect('/profile/#aceitar-termos')
 
     ebook = get_object_or_404(Ebook, pk=pk, author=request.user)
     form  = EbookForm(
