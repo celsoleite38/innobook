@@ -75,6 +75,22 @@ def send_verification_email(request, user):
     )
 
 
+def send_rejection_email(request, ebook):
+    """Avisa o escritor que seu eBook foi rejeitado, com a justificativa."""
+    from django.contrib.auth.tokens import default_token_generator  # noqa: F401
+    from django.urls import reverse
+
+    url = request.build_absolute_uri(
+        reverse('accounts:ebook_edit', args=[ebook.pk])
+    )
+
+    subject = f'eBook rejeitado: "{ebook.title}" — Editora Orange'
+    ctx = {'ebook': ebook, 'url': url}
+    html = render_to_string('emails/rejection_email.html', ctx)
+    plain = render_to_string('emails/rejection_email.txt', ctx)
+    _send_mail_with_retry(subject, plain, [ebook.author.email], html=html)
+
+
 def requires_two_factor(user):
     if user.is_superuser:
         return False

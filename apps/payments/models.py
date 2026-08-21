@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from apps.products.models import Ebook, FORMAT_CHOICES, FORMAT_DIGITAL, FORMAT_PHYSICAL, FORMAT_COMBO
+from decimal import Decimal
 import uuid
 
 
@@ -265,6 +266,15 @@ class PlatformConfig(models.Model):
         default=0,
         verbose_name='Taxa fixa por venda (R$)',
         help_text='Valor cobrado por cada ebook vendido, além da comissão percentual.'
+    )
+
+    # ISBN
+    isbn_required = models.BooleanField(
+        default=False,
+        verbose_name='Exigir ISBN por formato',
+        help_text='Se ativo, é obrigatório informar o ISBN correspondente '
+                  'ao enviar PDF/EPUB/MOBI ou ao oferecer a versão física. '
+                  'Formato e duplicidade continuam validados mesmo desativado.'
     )
 
     # Termos da loja

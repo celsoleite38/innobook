@@ -176,6 +176,11 @@ class Ebook(models.Model):
         default=STATUS_DRAFT,
         verbose_name='Status'
     )
+    rejection_reason = models.TextField(
+        blank=True,
+        verbose_name='Justificativa da rejeição',
+        help_text='Motivo enviado ao escritor quando o eBook é rejeitado.'
+    )
     pages       = models.PositiveIntegerField(null=True, blank=True, verbose_name='Páginas')
     language    = models.CharField(max_length=50, default='Português', verbose_name='Idioma')
     featured    = models.BooleanField(default=False, verbose_name='Destaque')
@@ -211,11 +216,16 @@ class Ebook(models.Model):
             'isbn_physical': ('physical_price', 'Físico'),
         }
 
+        # Obrigatoriedade controlada pela Configuração da Plataforma
+        # (import tardio evita import circular com apps.payments)
+        from apps.payments.models import PlatformConfig
+        isbn_obrigatorio = PlatformConfig.get().isbn_required
+
         for isbn_field, (file_field, label) in isbn_map.items():
             isbn_value = getattr(self, isbn_field, '').strip() if getattr(self, isbn_field, '') else ''
             file_value = getattr(self, file_field, None)
 
-            if file_value and not isbn_value:
+            if isbn_obrigatorio and file_value and not isbn_value:
                 errors[isbn_field] = f'O ISBN {label} é obrigatório quando o arquivo é enviado.'
             if isbn_value and len(isbn_value) not in (10, 13):
                 errors[isbn_field] = f'O ISBN {label} deve ter 10 ou 13 caracteres.'

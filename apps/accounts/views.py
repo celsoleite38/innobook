@@ -21,6 +21,7 @@ from .security import (
     start_two_factor_login,
     send_fresh_otp,
     send_verification_email,
+    send_rejection_email,
     verify_otp,
     otp_is_locked,
     record_otp_failure,
@@ -150,10 +151,22 @@ def ebook_edit_view(request, pk):
     if request.method == 'POST':
         if form.is_valid():
             ebook = form.save(commit=False)
-            if config.terms_enabled and request.user.terms_accepted:
-                ebook.status = Ebook.STATUS_PUBLISHED
-            ebook.save()
-            messages.success(request, 'eBook atualizado!')
+            if ebook.status == Ebook.STATUS_REJECTED:
+                # Reenvio após correção: volta para aprovação (nunca
+                # auto-publica um livro que foi rejeitado pela equipe).
+                ebook.status = Ebook.STATUS_PENDING
+                ebook.rejection_reason = ''
+                ebook.save()
+                messages.success(
+                    request,
+                    'eBook atualizado e reenviado para aprovação! '
+                    'Você será notificado após a revisão.'
+                )
+            else:
+                if config.terms_enabled and request.user.terms_accepted:
+                    ebook.status = Ebook.STATUS_PUBLISHED
+                ebook.save()
+                messages.success(request, 'eBook atualizado!')
             return redirect('accounts:producer')
 
     return render(request, 'accounts/ebook_form.html', {
@@ -173,8 +186,16 @@ def producer_book_publish_view(request, pk):
         return redirect('accounts:producer')
 
     ebook = get_object_or_404(Ebook, pk=pk, author=request.user)
+    if ebook.status == Ebook.STATUS_REJECTED:
+        messages.error(
+            request,
+            'Este eBook foi rejeitado pela equipe. Edite-o para corrigir as '
+            'pendências e reenvie — ele voltará para aprovação.'
+        )
+        return redirect('accounts:ebook_edit', pk=ebook.pk)
     ebook.status = Ebook.STATUS_PUBLISHED
-    ebook.save(update_fields=['status'])
+    ebook.rejection_reason = ''
+    ebook.save(update_fields=['status', 'rejection_reason'])
     messages.success(request, f'"{ebook.title}" foi publicado!')
     return redirect('accounts:producer')
 
@@ -759,7 +780,8 @@ def admin_book_approve_view(request, pk):
 
     ebook = get_object_or_404(Ebook, pk=pk)
     ebook.status = 'published'
-    ebook.save(update_fields=['status'])
+    ebook.rejection_reason = ''
+    ebook.save(update_fields=['status', 'rejection_reason'])
     messages.success(request, f'"{ebook.title}" foi aprovado e publicado.')
     return redirect('accounts:admin_book_detail', pk=pk)
 
@@ -770,7 +792,26 @@ def admin_book_reject_view(request, pk):
         return redirect('accounts:admin_books')
 
     ebook = get_object_or_404(Ebook, pk=pk)
+    justificativa = (request.POST.get('justificativa') or '').strip()
+    if not justificativa:
+        messages.error(
+            request,
+            'A justificativa é obrigatória para rejeitar um eBook.'
+        )
+        return redirect('accounts:admin_book_detail', pk=pk)
+
     ebook.status = 'rejected'
-    ebook.save(update_fields=['status'])
+    ebook.rejection_reason = justificativa
+    ebook.save(update_fields=['status', 'rejection_reason'])
+
+    try:
+        send_rejection_email(request, ebook)
+    except Exception:
+        messages.warning(
+            request,
+            'eBook rejeitado, mas houve falha ao enviar o e-mail ao escritor. '
+            'Verifique a configuração de SMTP.'
+        )
+
     messages.success(request, f'"{ebook.title}" foi rejeitado.')
     return redirect('accounts:admin_book_detail', pk=pk)

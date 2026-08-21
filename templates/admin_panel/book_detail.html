@@ -217,11 +217,20 @@
                             </button>
                         </form>
 
-                        <form method="post" action="{% url 'accounts:admin_book_reject' ebook.pk %}">
+                        <form method="post" action="{% url 'accounts:admin_book_reject' ebook.pk %}"
+                              onsubmit="return validarJustificativa(this);">
                             {% csrf_token %}
+                            <label for="justificativa-rejeitar"
+                                   style="font-size:12px; color:#1a1a2e; font-weight:600;">
+                                Justificativa da rejeição <span class="text-danger">*</span>
+                            </label>
+                            <textarea name="justificativa" id="justificativa-rejeitar" required
+                                      rows="4" placeholder="Explique ao escritor o motivo da rejeição (obrigatório)."
+                                      style="width:100%; font-size:12px; border:0.5px solid #e0d8cc;
+                                             border-radius:6px; padding:8px; margin-bottom:0.5rem;"></textarea>
                             <button type="submit" class="btn btn-outline-danger w-100"
                                     style="font-size:12px; padding:10px;"
-                                    onclick="return confirm('Rejeitar &quot;{{ ebook.title }}&quot;?')">
+                                    onclick="return confirm('Rejeitar &quot;{{ ebook.title }}&quot; e notificar o escritor?')">
                                 <i class="bi bi-x-circle me-1"></i>Rejeitar
                             </button>
                         </form>
@@ -234,14 +243,35 @@
                               color:#888; margin-bottom:1rem;">
                         Ações
                     </p>
-                    <form method="post" action="{% url 'accounts:admin_book_reject' ebook.pk %}">
+                    <form method="post" action="{% url 'accounts:admin_book_reject' ebook.pk %}"
+                          onsubmit="return validarJustificativa(this);">
                         {% csrf_token %}
+                        <label for="justificativa-despublicar"
+                               style="font-size:12px; color:#1a1a2e; font-weight:600;">
+                            Justificativa <span class="text-danger">*</span>
+                        </label>
+                        <textarea name="justificativa" id="justificativa-despublicar" required
+                                  rows="4" placeholder="Motivo da remoção (será enviado ao escritor)."
+                                  style="width:100%; font-size:12px; border:0.5px solid #e0d8cc;
+                                         border-radius:6px; padding:8px; margin-bottom:0.5rem;"></textarea>
                         <button type="submit" class="btn btn-outline-danger w-100"
                                 style="font-size:12px; padding:10px;"
-                                onclick="return confirm('Remover publicação de &quot;{{ ebook.title }}&quot;?')">
+                                onclick="return confirm('Remover publicação de &quot;{{ ebook.title }}&quot; e notificar o escritor?')">
                             <i class="bi bi-x-circle me-1"></i>Remover Publicação
                         </button>
                     </form>
+                </div>
+                {% endif %}
+
+                {% if ebook.rejection_reason %}
+                <div style="background:#fdf5f5; border:0.5px solid #e8b8b8;
+                            border-radius:6px; padding:1.25rem;">
+                    <p style="font-size:11px; letter-spacing:1px; text-transform:uppercase;
+                              color:#8b2020; margin-bottom:0.75rem;">
+                        Última justificativa enviada
+                    </p>
+                    <p style="font-size:13px; color:#1a1a2e; margin:0;
+                              white-space:pre-line;">{{ ebook.rejection_reason }}</p>
                 </div>
                 {% endif %}
 
@@ -249,4 +279,18 @@
         </div>
     </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function validarJustificativa(form) {
+    var campo = form.querySelector('textarea[name="justificativa"]');
+    if (!campo || !campo.value.trim()) {
+        alert('Escreva a justificativa antes de rejeitar — ela será enviada ao escritor.');
+        if (campo) campo.focus();
+        return false;
+    }
+    return true;
+}
+</script>
 {% endblock %}

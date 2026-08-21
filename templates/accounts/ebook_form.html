@@ -10,6 +10,15 @@
                 <h3 class="fw-bold mb-4">
                     <img src="{% static 'images/logoorange.png' %}" alt="Book Icon" style="height:40px;" ></i> {{ title }}
                 </h3>
+
+                {% if ebook and ebook.status == 'rejected' and ebook.rejection_reason %}
+                <div class="alert alert-danger" role="alert">
+                    <strong><i class="bi bi-exclamation-octagon me-1"></i>Este eBook foi rejeitado pela equipe.</strong><br>
+                    <span class="small">Motivo: {{ ebook.rejection_reason|linebreaksbr }}</span><br>
+                    <span class="small">Corrija as pendências e salve — o eBook será reenviado automaticamente para aprovação.</span>
+                </div>
+                {% endif %}
+
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     <div class="row g-3">

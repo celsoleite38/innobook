@@ -1,0 +1,29 @@
+{% extends 'emails/base_email.html' %}
+
+{% block email_subtitle %}eBook rejeitado{% endblock %}
+
+{% block email_body %}
+    <h2>Olá, {{ ebook.author.first_name|default:ebook.author.username }}!</h2>
+    <p>
+        Infelizmente o eBook <strong>"{{ ebook.title }}"</strong> foi
+        <strong style="color:#8b2020;">rejeitado</strong> pela nossa equipe
+        de revisão e não está mais disponível na loja.
+    </p>
+
+    <div class="box" style="border-left:4px solid #8b2020; background:#fdf5f5;
+                            padding:14px 18px; border-radius:6px;">
+        <p style="margin:0 0 6px; font-weight:700; color:#8b2020;">Justificativa da revisão:</p>
+        <p style="margin:0; white-space:pre-line;">{{ ebook.rejection_reason }}</p>
+    </div>
+
+    <p>
+        Após corrigir as pendências, edite o eBook no seu painel de escritor.
+        Ele será reenviado automaticamente para nova aprovação.
+    </p>
+
+    <a href="{{ url }}" class="btn" style="display:inline-block; background:#c9a84c;
+              color:#1a1a2e; font-weight:700; padding:12px 28px;
+              border-radius:6px; text-decoration:none;">
+        Editar e reenviar
+    </a>
+{% endblock %}

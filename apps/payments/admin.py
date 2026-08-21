@@ -57,7 +57,7 @@ class PlatformConfigAdmin(admin.ModelAdmin):
     list_display = [
         'commission_percent', 'fixed_fee', 'min_withdraw',
         'max_upload_size_mb', 'max_cover_size_mb',
-        'max_preview_size_mb', 'updated_at'
+        'max_preview_size_mb', 'isbn_required', 'updated_at'
     ]
 
     fieldsets = (
@@ -67,6 +67,12 @@ class PlatformConfigAdmin(admin.ModelAdmin):
         ('Termos da Loja', {
             'fields': ('terms_enabled', 'store_terms'),
             'description': 'Configure os termos que escritores devem aceitar antes de publicar.'
+        }),
+        ('ISBN', {
+            'fields': ('isbn_required',),
+            'description': 'Ative para exigir o ISBN correspondente ao enviar PDF, EPUB, MOBI '
+                           'ou ao oferecer a versão física. Quando desativado, os eBooks podem '
+                           'ser publicados sem ISBN.'
         }),
         ('Limites de Upload', {
             'fields': (

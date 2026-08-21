@@ -1,0 +1,17 @@
+eBook rejeitado — Editora Orange
+
+Olá, {{ ebook.author.first_name|default:ebook.author.username }}!
+
+Infelizmente o eBook "{{ ebook.title }}" foi REJEITADO pela nossa equipe
+de revisão e não está mais disponível na loja.
+
+Justificativa da revisão:
+{{ ebook.rejection_reason }}
+
+Após corrigir as pendências, edite o eBook no seu painel de escritor.
+Ele será reenviado automaticamente para nova aprovação.
+
+Editar: {{ url }}
+
+© Editora Orange — Todos os direitos reservados.
+Dúvidas? Entre em contato: suporte@editoraorange.com.br
