@@ -88,6 +88,31 @@
                                 </p>
                             </div>
                             {% endif %}
+                            {% if ebook.physical_price %}
+                            <div class="col-md-6">
+                                <p style="font-size:11px; letter-spacing:1px;
+                                          text-transform:uppercase; color:#888; margin-bottom:4px;">
+                                    Preço Físico
+                                </p>
+                                <p style="font-size:14px; color:#1a1a2e; margin:0; font-weight:600;">
+                                    R$ {{ ebook.physical_price|floatformat:2 }}
+                                    <small style="color:#888; font-weight:400;">
+                                        (estoque: {{ ebook.physical_stock }})
+                                    </small>
+                                </p>
+                            </div>
+                            {% endif %}
+                            {% if ebook.combo_price %}
+                            <div class="col-md-6">
+                                <p style="font-size:11px; letter-spacing:1px;
+                                          text-transform:uppercase; color:#888; margin-bottom:4px;">
+                                    Preço Combo (Físico + Digital)
+                                </p>
+                                <p style="font-size:14px; color:#1a1a2e; margin:0; font-weight:600;">
+                                    R$ {{ ebook.combo_price|floatformat:2 }}
+                                </p>
+                            </div>
+                            {% endif %}
                             <div class="col-md-6">
                                 <p style="font-size:11px; letter-spacing:1px;
                                           text-transform:uppercase; color:#888; margin-bottom:4px;">

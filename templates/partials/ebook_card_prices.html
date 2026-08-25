@@ -1,0 +1,25 @@
+{% comment %}
+Exibe os preços disponíveis do eBook no card (digital e/ou físico).
+Recebe: ebook
+{% endcomment %}
+<div>
+    {% if ebook.get_price %}
+        {% if ebook.discount_price %}
+        <small style="color:#aaa; text-decoration:line-through;
+                      font-size:11px;">
+            R$ {{ ebook.price }}
+        </small><br>
+        {% endif %}
+        <span class="ebook-price">
+            {% if ebook.physical_price %}Digital:{% endif %}
+            R$ {{ ebook.get_price }}
+        </span>
+    {% endif %}
+    {% if ebook.physical_price %}
+        {% if ebook.get_price %}<br>{% endif %}
+        <span class="ebook-price">
+            {% if ebook.get_price %}Físico:{% endif %}
+            R$ {{ ebook.physical_price }}
+        </span>
+    {% endif %}
+</div>

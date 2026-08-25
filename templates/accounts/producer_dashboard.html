@@ -125,7 +125,12 @@
                         {{ ebook.rejection_reason|linebreaksbr }}
                     </div>
                     {% endif %}
-                    <small class="text-muted">R$ {{ ebook.price }}</small>
+                    <small class="text-muted">
+                        {% if ebook.get_price %}Digital: R$ {{ ebook.get_price }}{% endif %}
+                        {% if ebook.physical_price %}
+                            {% if ebook.get_price %} · {% endif %}Físico: R$ {{ ebook.physical_price }}
+                        {% endif %}
+                    </small>
                 </div>
                 <div class="d-flex flex-column gap-1">
                     {% if ebook.status == 'pending' and terms_enabled and user.terms_accepted %}

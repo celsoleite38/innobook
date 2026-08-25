@@ -1,4 +1,6 @@
 from django.shortcuts import render, get_object_or_404
+from django.db.models import DecimalField
+from django.db.models.functions import Coalesce
 from .models import Ebook, Category, FORMAT_DIGITAL, FORMAT_COMBO
 
 
@@ -29,7 +31,18 @@ def ebook_list_view(request):
 
     # Ordenação
     order = request.GET.get('order', '-created_at')
-    if order in ['price', '-price', '-created_at', 'title']:
+    if order in ['price', '-price']:
+        # Considera também livros apenas físicos (price pode ser NULL)
+        ebooks = ebooks.annotate(
+            effective_price=Coalesce(
+                'discount_price', 'price', 'combo_price', 'physical_price',
+                output_field=DecimalField(max_digits=8, decimal_places=2),
+            )
+        )
+        ebooks = ebooks.order_by(
+            'effective_price' if order == 'price' else '-effective_price'
+        )
+    elif order in ['-created_at', 'title']:
         ebooks = ebooks.order_by(order)
 
     return render(request, 'products/list.html', {

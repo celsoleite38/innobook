@@ -90,14 +90,8 @@
                         <div class="ebook-card-author">
                             {{ ebook.author.get_full_name|default:ebook.author.username }}
                         </div>
-                        {% if ebook.discount_price %}
-                        <small style="color:#aaa; text-decoration:line-through;
-                                      font-size:12px;">
-                            R$ {{ ebook.price }}
-                        </small><br>
-                        {% endif %}
                         <div class="d-flex align-items-center justify-content-between mt-1">
-                            <span class="ebook-price">R$ {{ ebook.get_price }}</span>
+                            {% include 'partials/ebook_card_prices.html' %}
                             <a href="{% url 'products:detail' ebook.slug %}"
                                class="btn-navy" style="padding:6px 16px; font-size:10px;">
                                Ver mais
