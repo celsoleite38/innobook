@@ -1,6 +1,21 @@
+from decimal import Decimal
+
 from django import forms
-from .models import Ebook, EbookBonus
+from .models import Ebook, EbookBonus, PRECO_MINIMO
 from .validators import validar_ebook, validar_imagem, validar_preview
+
+
+class SafeClearableFileInput(forms.ClearableFileInput):
+    """
+    ClearableFileInput que nunca acessa .url do arquivo atual — o storage
+    protegido levanta erro ao pedir URL pública. Mostra apenas o nome do
+    arquivo atual e a opção de limpar/substituir.
+    """
+
+    template_name = 'widgets/clearable_file_input.html'
+
+    def is_initial(self, value):
+        return bool(value and getattr(value, 'name', None))
 
 
 class EbookForm(forms.ModelForm):
@@ -20,19 +35,19 @@ class EbookForm(forms.ModelForm):
            'title'         : forms.TextInput(attrs={'class': 'form-control'}),
             'description'   : forms.Textarea(attrs={'class': 'form-control', 'rows': 5}),
             'category'      : forms.Select(attrs={'class': 'form-select'}),
-            'cover'         : forms.FileInput(attrs={'class': 'form-control'}),
-            'file'          : forms.FileInput(attrs={'class': 'form-control'}),
-            'file_epub'     : forms.FileInput(attrs={'class': 'form-control'}),
-            'file_mobi'     : forms.FileInput(attrs={'class': 'form-control'}),
-            'preview'       : forms.FileInput(attrs={'class' : 'form-control', 'accept': '.pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/*'}),
-            'price'         : forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'discount_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'cover'         : SafeClearableFileInput(attrs={'class': 'form-control'}),
+            'file'          : SafeClearableFileInput(attrs={'class': 'form-control'}),
+            'file_epub'     : SafeClearableFileInput(attrs={'class': 'form-control'}),
+            'file_mobi'     : SafeClearableFileInput(attrs={'class': 'form-control'}),
+            'preview'       : SafeClearableFileInput(attrs={'class' : 'form-control', 'accept': '.pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/*'}),
+            'price'         : forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': str(PRECO_MINIMO)}),
+            'discount_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': str(PRECO_MINIMO)}),
             'isbn_physical' : forms.TextInput(attrs={'class': 'form-control', 'placeholder': '000-0-00-000000-0', 'maxlength': '13'}),
             'isbn_pdf'      : forms.TextInput(attrs={'class': 'form-control', 'placeholder': '000-0-00-000000-0', 'maxlength': '13'}),
             'isbn_epub'     : forms.TextInput(attrs={'class': 'form-control', 'placeholder': '000-0-00-000000-0', 'maxlength': '13'}),
             'isbn_mobi'     : forms.TextInput(attrs={'class': 'form-control', 'placeholder': '000-0-00-000000-0', 'maxlength': '13'}),
-            'physical_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'combo_price'   : forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'physical_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': str(PRECO_MINIMO)}),
+            'combo_price'   : forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': str(PRECO_MINIMO)}),
             'physical_stock': forms.NumberInput(attrs={'class': 'form-control'}),
             'physical_weight_g': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
             'physical_length_cm': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
@@ -71,6 +86,14 @@ class EbookForm(forms.ModelForm):
             raise forms.ValidationError(
                 'Envie pelo menos um arquivo digital (PDF, EPUB ou MOBI) '
                 'ou informe o preço físico.'
+            )
+
+        preco = dados.get('price')
+        promocional = dados.get('discount_price')
+        if preco is not None and promocional is not None and promocional >= preco:
+            self.add_error(
+                'discount_price',
+                'O preço promocional deve ser menor que o preço normal.',
             )
         return dados
 
@@ -129,10 +152,10 @@ class EbookBonusForm(forms.ModelForm):
         widgets = {
             'title'      : forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'cover'      : forms.FileInput(attrs={'class': 'form-control'}),
-            'file'       : forms.FileInput(attrs={'class': 'form-control'}),
-            'file_epub'  : forms.FileInput(attrs={'class': 'form-control'}),
-            'file_mobi'  : forms.FileInput(attrs={'class': 'form-control'}),
+            'cover'      : SafeClearableFileInput(attrs={'class': 'form-control'}),
+            'file'       : SafeClearableFileInput(attrs={'class': 'form-control'}),
+            'file_epub'  : SafeClearableFileInput(attrs={'class': 'form-control'}),
+            'file_mobi'  : SafeClearableFileInput(attrs={'class': 'form-control'}),
             'order'      : forms.NumberInput(attrs={'class': 'form-control'}),
         }
 

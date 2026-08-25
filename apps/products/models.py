@@ -1,9 +1,17 @@
 from django.db import models
 from django.conf import settings
+from decimal import Decimal
+
 from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator, MinValueValidator
 from django.utils.text import slugify
 
 from core.storages import ProtectedFileSystemStorage
+from .validators import (
+    FORMATOS_EBOOK,
+    FORMATOS_IMAGEM,
+    FORMATOS_PREVIEW,
+)
 
 protected_storage = ProtectedFileSystemStorage()
 
@@ -18,6 +26,8 @@ FORMAT_CHOICES = [
     (FORMAT_PHYSICAL, 'Físico'),
     (FORMAT_COMBO,    'Físico + Digital'),
 ]
+
+PRECO_MINIMO = Decimal('5.90')
 
 
 class Category(models.Model):
@@ -72,7 +82,14 @@ class Ebook(models.Model):
     title       = models.CharField(max_length=200, verbose_name='Título')
     slug        = models.SlugField(unique=True, blank=True, max_length=220)
     description = models.TextField(verbose_name='Descrição')
-    cover       = models.ImageField(upload_to='covers/', verbose_name='Capa')
+    cover       = models.ImageField(
+        upload_to='covers/',
+        verbose_name='Capa',
+        validators=[FileExtensionValidator(
+            FORMATOS_IMAGEM,
+            'Formato não permitido. Use JPG, PNG, WEBP ou GIF.'
+        )],
+    )
 
     # ISBN por formato
     isbn_physical = models.CharField(
@@ -97,7 +114,11 @@ class Ebook(models.Model):
         storage=protected_storage,
         upload_to='ebooks/',
         blank=True, null=True,
-        verbose_name='Arquivo PDF'
+        verbose_name='Arquivo PDF',
+        validators=[FileExtensionValidator(
+            FORMATOS_EBOOK,
+            'Formato não permitido. Use PDF, EPUB ou MOBI.'
+        )],
     )
 
     # EPUB (opcional)
@@ -105,45 +126,61 @@ class Ebook(models.Model):
         storage=protected_storage,
         upload_to='ebooks/epub/',
         blank=True, null=True,
-        verbose_name='Arquivo EPUB'
+        verbose_name='Arquivo EPUB',
+        validators=[FileExtensionValidator(
+            FORMATOS_EBOOK,
+            'Formato não permitido. Use PDF, EPUB ou MOBI.'
+        )],
     )
     # MOBI/Kindle (opcional)
     file_mobi       = models.FileField(
         storage=protected_storage,
         upload_to='ebooks/mobi/',
         blank=True, null=True,
-        verbose_name='Arquivo MOBI (Kindle)'
+        verbose_name='Arquivo MOBI (Kindle)',
+        validators=[FileExtensionValidator(
+            FORMATOS_EBOOK,
+            'Formato não permitido. Use PDF, EPUB ou MOBI.'
+        )],
     )
 
     # Preview gratuito (primeiras páginas)
     preview     = models.FileField(
         upload_to='previews/',
         blank=True, null=True,
-        verbose_name='Preview gratuito'
+        verbose_name='Preview gratuito',
+        validators=[FileExtensionValidator(
+            FORMATOS_PREVIEW,
+            'Formato não permitido. Use PDF, JPG, PNG, WEBP ou GIF.'
+        )],
     )
 
     # Preço e comercial
     price       = models.DecimalField(
         max_digits=8, decimal_places=2,
         null=True, blank=True,
-        verbose_name='Preço digital'
+        verbose_name='Preço digital',
+        validators=[MinValueValidator(PRECO_MINIMO)],
     )
     discount_price = models.DecimalField(
         max_digits=8, decimal_places=2,
         null=True, blank=True,
-        verbose_name='Preço promocional'
+        verbose_name='Preço promocional',
+        validators=[MinValueValidator(PRECO_MINIMO)],
     )
 
     # Livro físico (impresso)
     physical_price = models.DecimalField(
         max_digits=8, decimal_places=2,
         null=True, blank=True,
-        verbose_name='Preço do livro físico'
+        verbose_name='Preço do livro físico',
+        validators=[MinValueValidator(PRECO_MINIMO)],
     )
     combo_price = models.DecimalField(
         max_digits=8, decimal_places=2,
         null=True, blank=True,
-        verbose_name='Preço físico + digital (combo)'
+        verbose_name='Preço físico + digital (combo)',
+        validators=[MinValueValidator(PRECO_MINIMO)],
     )
     physical_stock = models.PositiveIntegerField(
         default=0,
@@ -344,7 +381,11 @@ class EbookBonus(models.Model):
     cover       = models.ImageField(
         upload_to='covers/bonus/',
         blank=True, null=True,
-        verbose_name='Capa do bônus'
+        verbose_name='Capa do bônus',
+        validators=[FileExtensionValidator(
+            FORMATOS_IMAGEM,
+            'Formato não permitido. Use JPG, PNG, WEBP ou GIF.'
+        )],
     )
 
     # Arquivos do bônus (protegidos — fora do MEDIA_ROOT)
@@ -353,18 +394,30 @@ class EbookBonus(models.Model):
         upload_to='bonus/',
         verbose_name='Arquivo PDF',
         blank=True, null=True,
+        validators=[FileExtensionValidator(
+            FORMATOS_EBOOK,
+            'Formato não permitido. Use PDF, EPUB ou MOBI.'
+        )],
     )
     file_epub   = models.FileField(
         storage=protected_storage,
         upload_to='bonus/epub/',
         blank=True, null=True,
-        verbose_name='Arquivo EPUB'
+        verbose_name='Arquivo EPUB',
+        validators=[FileExtensionValidator(
+            FORMATOS_EBOOK,
+            'Formato não permitido. Use PDF, EPUB ou MOBI.'
+        )],
     )
     file_mobi   = models.FileField(
         storage=protected_storage,
         upload_to='bonus/mobi/',
         blank=True, null=True,
-        verbose_name='Arquivo MOBI (Kindle)'
+        verbose_name='Arquivo MOBI (Kindle)',
+        validators=[FileExtensionValidator(
+            FORMATOS_EBOOK,
+            'Formato não permitido. Use PDF, EPUB ou MOBI.'
+        )],
     )
 
     order       = models.PositiveIntegerField(
