@@ -270,13 +270,13 @@
                     {% else %}
                     {% if user.is_authenticated %}
                     <form method="get" action="{% url 'payments:checkout' ebook.id %}">
-                        <input type="hidden" name="variant" id="variant-buy" value="digital">
+                        <input type="hidden" name="variant" id="variant-buy" value="{% if ebook.get_price %}digital{% else %}physical{% endif %}">
                         <button type="submit" class="btn-navy d-block text-center w-100" style="padding:14px; font-size:12px; border:none;">
                             <i class="bi bi-bag me-2"></i>Comprar agora
                         </button>
                     </form>
                     <form method="get" action="{% url 'cart:add' ebook.id %}">
-                        <input type="hidden" name="variant" id="variant-cart" value="digital">
+                        <input type="hidden" name="variant" id="variant-cart" value="{% if ebook.get_price %}digital{% else %}physical{% endif %}">
                         <button type="submit" class="btn-outline-gold d-block text-center w-100 mt-2" style="padding:12px; font-size:12px; border:1px solid var(--gold);">
                             <i class="bi bi-bag-plus me-2"></i>Adicionar ao carrinho
                         </button>
@@ -368,6 +368,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     radios.forEach(r => r.addEventListener('change', updateFormat));
+    updateFormat();
 });
 </script>
 {% endif %}

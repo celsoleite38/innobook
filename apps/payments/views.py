@@ -153,6 +153,14 @@ def checkout_view(request, ebook_id):
 
     needs_shipping = variant in (FORMAT_PHYSICAL, FORMAT_COMBO)
     amount         = ebook.get_format_price(variant)
+
+    if not amount or amount <= 0:
+        messages.error(
+            request,
+            'Este formato não está disponível para compra no momento.'
+        )
+        return redirect('products:detail', slug=ebook.slug)
+
     shipping       = _get_shipping_from_post(request)
     freight        = Decimal('0')
     offer_choice   = None
