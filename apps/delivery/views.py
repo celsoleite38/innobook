@@ -178,6 +178,30 @@ def _shipping_generate_label(request, pk):
 
 
 @login_required
+def shipping_download_label(request, pk):
+    from apps.accounts.views import producer_required
+
+    return producer_required(_shipping_download_label)(request, pk)
+
+
+def _shipping_download_label(request, pk):
+    shipment = get_object_or_404(Shipment, pk=pk, producer=request.user)
+
+    if not shipment.label_pdf:
+        messages.error(request, 'Etiqueta em PDF indisponível.')
+        return redirect('delivery:shipping_panel')
+
+    response = FileResponse(
+        shipment.label_pdf.open('rb'),
+        content_type='application/pdf',
+    )
+    response['Content-Disposition'] = (
+        f'attachment; filename="etiqueta_{shipment.pk}.pdf"'
+    )
+    return response
+
+
+@login_required
 def shipping_mark_shipped(request, pk):
     from apps.accounts.views import producer_required
 

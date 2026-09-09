@@ -155,6 +155,12 @@
                                     Imprimir etiqueta
                                 </a>
                                 {% endif %}
+                                {% if shipment.label_pdf %}
+                                <a href="{% url 'delivery:shipping_label_pdf' shipment.pk %}"
+                                   class="btn-gold" style="padding:6px 12px; font-size:11px;">
+                                    Baixar PDF
+                                </a>
+                                {% endif %}
                             {% endif %}
                             {% if shipment.status == 'awaiting' or shipment.status == 'ready' %}
                                 <form method="post" action="{% url 'delivery:shipping_mark_shipped' shipment.pk %}"
@@ -185,6 +191,12 @@
                             <a href="{{ shipment.print_url }}" target="_blank"
                                class="btn-outline-gold" style="padding:6px 12px; font-size:11px;">
                                 Imprimir etiqueta
+                            </a>
+                            {% endif %}
+                            {% if shipment.status == 'shipped' and shipment.label_pdf %}
+                            <a href="{% url 'delivery:shipping_label_pdf' shipment.pk %}"
+                               class="btn-outline-gold" style="padding:6px 12px; font-size:11px;">
+                                Baixar PDF
                             </a>
                             {% endif %}
                         </td>

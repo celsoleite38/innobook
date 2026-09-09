@@ -1,0 +1,23 @@
+{% extends 'emails/base_email.html' %}
+
+{% block email_subtitle %}Etiqueta pronta!{% endblock %}
+
+{% block email_body %}
+    <h2>Etiqueta de envio gerada!</h2>
+    <p>A etiqueta do seu pacote foi gerada automaticamente e está pronta para impressão.</p>
+
+    <div class="box">
+        <strong>Transportadora:</strong> {{ shipment.carrier }}<br>
+        <strong>Prazo estimado:</strong> {{ shipment.delivery_time|default:"—" }} dia(s) útil(eis)
+    </div>
+
+    <div style="text-align:center;">
+        <a href="{{ shipment.print_url }}" class="btn">
+            Imprimir etiqueta
+        </a>
+    </div>
+
+    <p class="muted">
+        Acesse <a href="{{ site_url }}/delivery/envios/">Meus Envios</a> para acompanhar o status do envio.
+    </p>
+{% endblock %}

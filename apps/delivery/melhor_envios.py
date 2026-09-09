@@ -476,7 +476,53 @@ def gerar_etiqueta_completa(shipment):
     shipment.status = shipment.STATUS_READY
     shipment.save(update_fields=['print_url', 'status', 'updated_at'])
     shipment.sync_order_status()
+
+    # Baixa e mescla PDFs das etiquetas (1 por volume)
+    _download_and_merge_pdfs(shipment, order_ids)
+
     return shipment
+
+
+def _download_and_merge_pdfs(shipment, order_ids):
+    """Baixa PDFs de todas as etiquetas e mescla em um único arquivo.
+
+    Se houver apenas 1 volume, salva o PDF direto.
+    Se houver múltiplos volumes, mescla com pypdf.PdfMerger.
+    Em caso de falha no download, loga warning e não bloqueia o fluxo.
+    """
+    from io import BytesIO
+    from django.core.files.base import ContentFile
+
+    pdfs = []
+    for oid in order_ids:
+        content = _baixar_pdf_etiqueta(oid, shipment.producer)
+        if content:
+            pdfs.append(content)
+
+    if not pdfs:
+        logger.warning(f'_download_and_merge_pdfs: nenhum PDF baixado para shipment #{shipment.pk}')
+        return
+
+    if len(pdfs) == 1:
+        filename = f'etiqueta_{shipment.melhor_envios_id or shipment.pk}.pdf'
+        shipment.label_pdf.save(filename, ContentFile(pdfs[0]), save=False)
+    else:
+        from pypdf import PdfMerger
+        merger = PdfMerger()
+        try:
+            for pdf_bytes in pdfs:
+                merger.append(BytesIO(pdf_bytes))
+            buffer = BytesIO()
+            merger.write(buffer)
+            merger.close()
+            filename = f'etiqueta_{shipment.melhor_envios_id or shipment.pk}.pdf'
+            shipment.label_pdf.save(filename, ContentFile(buffer.getvalue()), save=False)
+        except Exception as e:
+            logger.warning(f'_download_and_merge_pdfs: falha ao mesclar PDFs shipment #{shipment.pk}: {e}')
+            return
+
+    shipment.save(update_fields=['label_pdf', 'updated_at'])
+    logger.info(f'_download_and_merge_pdfs: PDF salvo para shipment #{shipment.pk}')
 
 
 def _persist_from_cart(shipment, data):
@@ -488,6 +534,37 @@ def _persist_from_cart(shipment, data):
         shipment.save(update_fields=[
             'melhor_envios_id', 'freight_cost', 'carrier', 'updated_at'
         ])
+
+
+def _baixar_pdf_etiqueta(order_id, producer):
+    """Baixa o PDF de uma etiqueta via API do Melhor Envios.
+
+    Passo 1: GET /api/v2/me/imprimir/pdf/{order_id} → URL do arquivo no S3
+    Passo 2: GET na URL S3 → binário do PDF
+
+    Retorna os bytes do PDF ou None se falhar.
+    """
+    try:
+        resp = _request('GET', f'/api/v2/me/imprimir/pdf/{order_id}', producer)
+        url = resp.get('url', '') if isinstance(resp, dict) else ''
+        if not url:
+            logger.warning(f'_baixar_pdf_etiqueta: sem URL para order {order_id}: {resp}')
+            return None
+
+        token = get_token(producer)
+        r = requests.get(
+            url,
+            headers={
+                'Authorization': f'Bearer {token}',
+                'User-Agent': USER_AGENT,
+            },
+            timeout=60,
+        )
+        r.raise_for_status()
+        return r.content
+    except Exception as e:
+        logger.warning(f'_baixar_pdf_etiqueta: falha order {order_id}: {e}')
+        return None
 
 
 def cancelar_etiqueta(shipment, description='Pedido cancelado.'):
@@ -505,6 +582,59 @@ def cancelar_etiqueta(shipment, description='Pedido cancelado.'):
     shipment.save(update_fields=['status', 'updated_at'])
     shipment.sync_order_status()
     return shipment
+
+
+def try_auto_generate_label(shipment_pk):
+    """
+    Tenta gerar etiqueta automaticamente para um shipment.
+
+    Projetado para ser chamado em thread separada.
+    Em caso de sucesso, envia email ao escritor com link de impressão.
+    Em caso de falha, loga warning e retorna False.
+    """
+    from .models import Shipment
+
+    try:
+        shipment = (
+            Shipment.objects
+            .select_related('producer')
+            .prefetch_related('orders', 'orders__ebook')
+            .get(pk=shipment_pk)
+        )
+    except Shipment.DoesNotExist:
+        logger.warning(f'try_auto_generate_label: shipment #{shipment_pk} não encontrado.')
+        return False
+
+    if shipment.status != Shipment.STATUS_AWAITING:
+        return False
+
+    if not shipment.orders.filter(status='paid').exists():
+        logger.warning(f'try_auto_generate_label: shipment #{shipment_pk} sem pedidos pagos.')
+        return False
+
+    error = shipping_ready_error(shipment.producer)
+    if error:
+        logger.warning(f'try_auto_generate_label: shipment #{shipment_pk} — {error}')
+        return False
+
+    try:
+        gerar_etiqueta_completa(shipment)
+    except MelhorEnviosError as e:
+        logger.warning(f'try_auto_generate_label: shipment #{shipment_pk} — {e}')
+        return False
+    except Exception as e:
+        logger.error(f'try_auto_generate_label: shipment #{shipment_pk} — erro inesperado: {e}')
+        return False
+
+    # Envia email ao escritor com link de impressão
+    try:
+        from apps.payments.emails import send_label_ready_notification
+        send_label_ready_notification(shipment)
+    except Exception as e:
+        logger.warning(f'try_auto_generate_label: falha ao enviar email para shipment #{shipment_pk}: {e}')
+
+    logger.info(f'try_auto_generate_label: etiqueta gerada para shipment #{shipment_pk}')
+    return True
 
 
 def consultar_status(shipment):

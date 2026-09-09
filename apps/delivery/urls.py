@@ -14,6 +14,7 @@ urlpatterns = [
     path('envios/oauth/callback/', views.oauth_callback, name='oauth_callback'),
     path('envios/editora/oauth/', views.editora_oauth_start, name='editora_oauth_start'),
     path('envios/<int:pk>/etiqueta/', views.shipping_generate_label, name='shipping_generate_label'),
+    path('envios/<int:pk>/etiqueta/pdf/', views.shipping_download_label, name='shipping_label_pdf'),
     path('envios/<int:pk>/enviado/', views.shipping_mark_shipped, name='shipping_mark_shipped'),
     path('envios/<int:pk>/cancelar/', views.shipping_cancel, name='shipping_cancel'),
 

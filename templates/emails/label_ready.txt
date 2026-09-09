@@ -1,0 +1,12 @@
+Etiqueta de envio gerada!
+
+A etiqueta do seu pacote foi gerada automaticamente e está pronta para impressão.
+
+Transportadora: {{ shipment.carrier }}
+Prazo estimado: {{ shipment.delivery_time|default:"—" }} dia(s) útil(eis)
+
+Imprimir etiqueta: {{ shipment.print_url }}
+
+Meus Envios: {{ site_url }}/delivery/envios/
+
+© Editora Orange — suporte@editoraorange.com.br

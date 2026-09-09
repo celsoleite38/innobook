@@ -509,6 +509,18 @@ def _confirm_order(order, charge_id):
             ebook.physical_stock -= 1
             ebook.save(update_fields=['physical_stock'])
 
+        # Gera etiqueta de frete automaticamente em thread separada
+        shipment = order.shipments.first()
+        if shipment:
+            import threading
+            from apps.delivery.melhor_envios import try_auto_generate_label
+            t = threading.Thread(
+                target=try_auto_generate_label,
+                args=(shipment.pk,),
+                daemon=True,
+            )
+            t.start()
+
     token = None
     if order.variant in (FORMAT_DIGITAL, FORMAT_COMBO):
         if not order.download_tokens.exists():

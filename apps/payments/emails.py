@@ -144,3 +144,29 @@ def send_cancelled_notification(shipment):
         html_message   = html_message,
         fail_silently  = True,
     )
+
+
+def send_label_ready_notification(shipment):
+    """Notifica o escritor que a etiqueta de envio foi gerada e está pronta para impressão."""
+    producer_email = shipment.producer.email
+    if not producer_email:
+        return
+
+    titles = ', '.join(
+        shipment.orders.values_list('ebook__title', flat=True).distinct()
+    ) or 'livro físico'
+
+    subject = f'🏷️ Etiqueta pronta — {titles}'
+    context = {'shipment': shipment, 'site_url': settings.SITE_URL}
+
+    html_message  = render_to_string('emails/label_ready.html', context)
+    plain_message = render_to_string('emails/label_ready.txt', context)
+
+    send_mail(
+        subject        = subject,
+        message        = plain_message,
+        from_email     = settings.DEFAULT_FROM_EMAIL,
+        recipient_list = [producer_email],
+        html_message   = html_message,
+        fail_silently  = True,
+    )

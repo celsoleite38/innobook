@@ -9,4 +9,7 @@ Comprador : {{ order.buyer_name }}
 Valor     : R$ {{ order.amount }}
 Seu ganho : R$ {{ order.producer_amount }}
 
+{% if order.needs_shipping %}Livro físico: acesse {{ site_url }}/delivery/envios/ para acompanhar o envio.
+A etiqueta será gerada automaticamente após a confirmação do pagamento.
+{% endif %}
 Acesse seu painel: {{ site_url }}/accounts/dashboard/

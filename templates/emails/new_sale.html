@@ -17,4 +17,14 @@
     </div>
 
     <p>Acesse seu painel para ver todos os detalhes das suas vendas.</p>
+
+    {% if order.needs_shipping %}
+    <div style="margin-top:12px; padding:10px; background:#fff8e1; border-left:3px solid #f9a825;">
+        <strong>Livro físico</strong><br>
+        <small>
+            Acesse <a href="{{ site_url }}/delivery/envios/">Meus Envios</a> para acompanhar o envio.
+            A etiqueta será gerada automaticamente após a confirmação do pagamento.
+        </small>
+    </div>
+    {% endif %}
 {% endblock %}
