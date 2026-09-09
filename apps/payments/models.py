@@ -52,6 +52,7 @@ class Order(models.Model):
     )
 
     # Dados de entrega (livro físico)
+    shipping_phone     = models.CharField(max_length=30, blank=True, verbose_name='Telefone do destinatário')
     shipping_name      = models.CharField(max_length=200, blank=True, verbose_name='Destinatário')
     shipping_zipcode   = models.CharField(max_length=10, blank=True, verbose_name='CEP')
     shipping_address   = models.CharField(max_length=255, blank=True, verbose_name='Endereço')

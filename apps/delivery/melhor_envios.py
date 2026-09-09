@@ -15,6 +15,7 @@ import hashlib
 import hmac
 import base64
 import logging
+import time
 
 import requests
 from django.conf import settings
@@ -352,6 +353,14 @@ def _estimate_volumes(items):
 #  Compra de etiqueta                                                          #
 # --------------------------------------------------------------------------- #
 
+def _from_email():
+    """Email puro para a API do ME (DEFAULT_FROM_EMAIL pode ser 'Nome <email>')."""
+    raw = settings.DEFAULT_FROM_EMAIL or ''
+    if '<' in raw and '>' in raw:
+        return raw.split('<')[1].split('>')[0].strip()
+    return raw.strip()
+
+
 def _origin_payload(shipment):
     profile = shipment.producer.shipping_profile
     if not profile.has_origin_address:
@@ -361,7 +370,7 @@ def _origin_payload(shipment):
     return {
         'name': profile.full_name,
         'phone': profile.phone,
-        'email': settings.DEFAULT_FROM_EMAIL or '',
+        'email': _from_email() or '',
         'document': profile.document,
         'company_document': '',
         'state_register': 'ISENTO',
@@ -372,14 +381,14 @@ def _origin_payload(shipment):
         'city': profile.city,
         'country_id': 'BR',
         'postal_code': profile.zipcode,
-        'state_abbr': profile.state,
+        'state_abbr': profile.state.upper(),
     }
 
 
 def _destination_payload(order):
     return {
         'name': order.shipping_name,
-        'phone': '',
+        'phone': order.shipping_phone or '',
         'email': order.buyer_email or '',
         'document': order.buyer.cpf if order.buyer else '',
         'company_document': '',
@@ -391,7 +400,7 @@ def _destination_payload(order):
         'city': order.shipping_city,
         'country_id': 'BR',
         'postal_code': order.shipping_zipcode,
-        'state_abbr': order.shipping_state,
+        'state_abbr': order.shipping_state.upper(),
     }
 
 
@@ -542,20 +551,19 @@ def _baixar_pdf_etiqueta(order_id, producer):
     Passo 1: GET /api/v2/me/imprimir/pdf/{order_id} → URL do arquivo no S3
     Passo 2: GET na URL S3 → binário do PDF
 
+    O generate é assíncrono: aguarda o envio atingir o status
+    "generated"/"released" antes de solicitar a impressão.
+
     Retorna os bytes do PDF ou None se falhar.
     """
     try:
-        resp = _request('GET', f'/api/v2/me/imprimir/pdf/{order_id}', producer)
-        url = resp.get('url', '') if isinstance(resp, dict) else ''
+        url = _esperar_pdf_liberado(order_id, producer)
         if not url:
-            logger.warning(f'_baixar_pdf_etiqueta: sem URL para order {order_id}: {resp}')
             return None
 
-        token = get_token(producer)
         r = requests.get(
             url,
             headers={
-                'Authorization': f'Bearer {token}',
                 'User-Agent': USER_AGENT,
             },
             timeout=60,
@@ -565,6 +573,61 @@ def _baixar_pdf_etiqueta(order_id, producer):
     except Exception as e:
         logger.warning(f'_baixar_pdf_etiqueta: falha order {order_id}: {e}')
         return None
+
+
+def _esperar_pdf_liberado(order_id, producer, tentativas=40, intervalo=10):
+    """Aguarda o envio ficar gerado e devolve a URL do PDF (ou '').
+
+    No sandbox, o pagamento é aprovado automaticamente em até ~5min,
+    então o retry cobre esse ciclo (40 × 10s ≈ 6,7 min). Em produção
+    o generate costuma ser imediato e a 1ª tentativa já basta.
+    """
+    _AGUARDAR = ('gerado', 'não processada', 'nao processada', 'processada',
+                 'ainda', 'pendente', 'aguarde')
+
+    def _verde_url():
+        resp = _request('GET', f'/api/v2/me/imprimir/pdf/{order_id}', producer)
+        if isinstance(resp, list):
+            return resp[0] if resp else ''
+        if isinstance(resp, dict):
+            return resp.get('url', '')
+        return ''
+
+    try:
+        url = _verde_url()
+        if url:
+            return url
+    except MelhorEnviosError as e:
+        if not any(x in str(e).lower() for x in _AGUARDAR):
+            logger.warning(f'_esperar_pdf_liberado: order {order_id}: {e}')
+            return ''
+        logger.info(f'_esperar_pdf_liberado: order {order_id} ainda gerando...')
+
+    for i in range(tentativas):
+        time.sleep(intervalo)
+        try:
+            url = _verde_url()
+            if url:
+                return url
+        except MelhorEnviosError as e:
+            logger.info(
+                f'_esperar_pdf_liberado: order {order_id} ainda bloqueado: {e}'
+            )
+        except Exception as e:
+            logger.warning(f'_esperar_pdf_liberado: check order {order_id}: {e}')
+
+        try:
+            info = _request('GET', f'/api/v2/me/orders/{order_id}', producer)
+            status = info.get('status', '') if isinstance(info, dict) else ''
+            logger.info(
+                f'_esperar_pdf_liberado: order {order_id} status={status} '
+                f'({i + 1}/{tentativas})'
+            )
+        except Exception as e:
+            logger.warning(f'_esperar_pdf_liberado: status check order {order_id}: {e}')
+
+    logger.warning(f'_esperar_pdf_liberado: order {order_id} sem PDF após espera.')
+    return ''
 
 
 def cancelar_etiqueta(shipment, description='Pedido cancelado.'):

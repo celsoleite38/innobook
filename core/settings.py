@@ -37,6 +37,7 @@ LOCAL_APPS = [
     'apps.payments',
     'apps.delivery',
     'apps.cart',
+    'django_extensions',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + LOCAL_APPS

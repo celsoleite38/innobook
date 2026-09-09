@@ -215,6 +215,7 @@ class CartCheckoutFreightTests(TestCase):
 
         response = self.client.post('/payments/checkout/carrinho/', {
             'shipping_name': 'Comprador',
+            'shipping_phone': '11999998888',
             'shipping_zipcode': '20040020',
             'shipping_address': 'Rua B',
             'shipping_number': '5',
@@ -255,6 +256,7 @@ class CartCheckoutFreightTests(TestCase):
 
         response = self.client.post('/payments/checkout/carrinho/', {
             'shipping_name': 'Comprador',
+            'shipping_phone': '11999998888',
             'shipping_zipcode': '20040020',
             'shipping_address': 'Rua B',
             'shipping_number': '5',

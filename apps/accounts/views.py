@@ -430,6 +430,11 @@ def dashboard_view(request):
     # Compras do usuário
     orders = user.orders.filter(status='paid').select_related('ebook')
 
+    # Garante token de download válido para eBooks digitais/combo
+    from apps.delivery.utils import get_or_create_download_token
+    for order in orders:
+        get_or_create_download_token(order)
+
     # Se for produtor, mostra os próprios ebooks
     my_ebooks = None
     if user.is_producer():

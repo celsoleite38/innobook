@@ -8,7 +8,7 @@ from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from django.conf import settings
 from apps.products.models import Ebook
-from apps.delivery.utils import create_download_token, get_client_ip
+from apps.delivery.utils import get_or_create_download_token, get_client_ip
 from .models import Order, Payment, WithdrawRequest
 from .asaas import create_charge, get_charge, get_pix_qrcode
 from .emails import send_purchase_confirmation, send_new_sale_notification
@@ -27,18 +27,20 @@ from decimal import Decimal, ROUND_HALF_UP
 def _get_shipping_from_post(request):
     return {
         'shipping_name':       request.POST.get('shipping_name', '').strip(),
+        'shipping_phone':      request.POST.get('shipping_phone', '').strip(),
         'shipping_zipcode':    request.POST.get('shipping_zipcode', '').strip(),
         'shipping_address':    request.POST.get('shipping_address', '').strip(),
         'shipping_number':     request.POST.get('shipping_number', '').strip(),
         'shipping_district':   request.POST.get('shipping_district', '').strip(),
         'shipping_complement': request.POST.get('shipping_complement', '').strip(),
         'shipping_city':       request.POST.get('shipping_city', '').strip(),
-        'shipping_state':      request.POST.get('shipping_state', '').strip(),
+        'shipping_state':      request.POST.get('shipping_state', '').strip().upper(),
     }
 
 
 def _shipping_is_valid(data):
-    return all([data['shipping_name'], data['shipping_zipcode'],
+    return all([data['shipping_name'], data['shipping_phone'],
+                data['shipping_zipcode'],
                 data['shipping_address'], data['shipping_number'],
                 data['shipping_district'],
                 data['shipping_city'], data['shipping_state']])
@@ -369,7 +371,7 @@ def check_pix_view(request, charge_id):
 @login_required
 def success_view(request, order_id):
     order = get_object_or_404(Order, order_id=order_id, buyer=request.user)
-    token = order.download_tokens.filter(is_active=True).first()
+    token = get_or_create_download_token(order)
     return render(request, 'payments/success.html', {
         'order': order,
         'token': token,
@@ -523,10 +525,9 @@ def _confirm_order(order, charge_id):
 
     token = None
     if order.variant in (FORMAT_DIGITAL, FORMAT_COMBO):
-        if not order.download_tokens.exists():
-            token = create_download_token(order, days_valid=365, max_downloads=10)
-        else:
-            token = order.download_tokens.filter(is_active=True).first()
+        token = get_or_create_download_token(
+            order, days_valid=365, max_downloads=10
+        )
 
     try:
         send_purchase_confirmation(order, token)
@@ -806,6 +807,10 @@ def my_orders_view(request):
     paid_orders    = request.user.orders.filter(
         status=Order.STATUS_PAID
     ).select_related('ebook').order_by('-paid_at')
+
+    # Garante token de download válido para eBooks digitais/combo
+    for order in paid_orders:
+        get_or_create_download_token(order)
 
     pending_orders = request.user.orders.filter(
         status=Order.STATUS_PENDING

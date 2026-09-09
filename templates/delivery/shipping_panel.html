@@ -143,22 +143,22 @@
                         <td class="text-end">
                             {% if shipment.status == 'awaiting' %}
                                 {% if shipment.orders.all %}
+                                {% if shipment.orders.all.0.shipping_phone|default_if_none:'' == '' %}
+                                <div class="text-warning mb-1" style="font-size:11px;">
+                                    <i class="bi bi-telephone-outbound me-1"></i>
+                                    Informe o telefone do destinatário antes de gerar a etiqueta.
+                                </div>
+                                {% endif %}
                                 <a href="{% url 'delivery:shipping_generate_label' shipment.pk %}"
                                    class="btn-gold" style="padding:6px 12px; font-size:11px;">
                                     Gerar etiqueta
                                 </a>
                                 {% endif %}
                             {% elif shipment.status == 'ready' %}
-                                {% if shipment.print_url %}
-                                <a href="{{ shipment.print_url }}" target="_blank"
-                                   class="btn-gold" style="padding:6px 12px; font-size:11px;">
-                                    Imprimir etiqueta
-                                </a>
-                                {% endif %}
                                 {% if shipment.label_pdf %}
                                 <a href="{% url 'delivery:shipping_label_pdf' shipment.pk %}"
                                    class="btn-gold" style="padding:6px 12px; font-size:11px;">
-                                    Baixar PDF
+                                    Baixar etiqueta
                                 </a>
                                 {% endif %}
                             {% endif %}
@@ -187,16 +187,10 @@
                                 </a>
                                 {% endif %}
                             {% endif %}
-                            {% if shipment.status == 'shipped' and shipment.print_url %}
-                            <a href="{{ shipment.print_url }}" target="_blank"
-                               class="btn-outline-gold" style="padding:6px 12px; font-size:11px;">
-                                Imprimir etiqueta
-                            </a>
-                            {% endif %}
                             {% if shipment.status == 'shipped' and shipment.label_pdf %}
                             <a href="{% url 'delivery:shipping_label_pdf' shipment.pk %}"
                                class="btn-outline-gold" style="padding:6px 12px; font-size:11px;">
-                                Baixar PDF
+                                Baixar etiqueta
                             </a>
                             {% endif %}
                         </td>

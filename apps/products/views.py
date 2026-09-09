@@ -68,9 +68,8 @@ def ebook_detail_view(request, slug):
         ).first()
         if order:
             already_bought = True
-            download_token = order.download_tokens.filter(
-                is_active=True
-            ).first()
+            from apps.delivery.utils import get_or_create_download_token
+            download_token = get_or_create_download_token(order)
 
     # Relacionados da mesma categoria
     related = Ebook.objects.filter(

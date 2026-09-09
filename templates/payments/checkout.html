@@ -83,6 +83,11 @@
                                     <input type="text" class="form-control" name="shipping_name"
                                            value="{{ shipping.shipping_name }}" required>
                                 </div>
+                                <div class="col-12">
+                                    <label class="form-label">Telefone do destinatário</label>
+                                    <input type="text" class="form-control" name="shipping_phone"
+                                           value="{{ shipping.shipping_phone }}" required>
+                                </div>
                                 <div class="col-4">
                                     <label class="form-label">CEP</label>
                                     <input type="text" class="form-control" name="shipping_zipcode"
@@ -91,8 +96,36 @@
                                 </div>
                                 <div class="col-8">
                                     <label class="form-label">UF</label>
-                                    <input type="text" class="form-control" name="shipping_state"
-                                           maxlength="2" value="{{ shipping.shipping_state }}" required>
+                                    <select class="form-select" name="shipping_state" required>
+                                        <option value="">Selecione...</option>
+                                        <option value="AC" {% if shipping.shipping_state == 'AC' %}selected{% endif %}>AC</option>
+                                        <option value="AL" {% if shipping.shipping_state == 'AL' %}selected{% endif %}>AL</option>
+                                        <option value="AP" {% if shipping.shipping_state == 'AP' %}selected{% endif %}>AP</option>
+                                        <option value="AM" {% if shipping.shipping_state == 'AM' %}selected{% endif %}>AM</option>
+                                        <option value="BA" {% if shipping.shipping_state == 'BA' %}selected{% endif %}>BA</option>
+                                        <option value="CE" {% if shipping.shipping_state == 'CE' %}selected{% endif %}>CE</option>
+                                        <option value="DF" {% if shipping.shipping_state == 'DF' %}selected{% endif %}>DF</option>
+                                        <option value="ES" {% if shipping.shipping_state == 'ES' %}selected{% endif %}>ES</option>
+                                        <option value="GO" {% if shipping.shipping_state == 'GO' %}selected{% endif %}>GO</option>
+                                        <option value="MA" {% if shipping.shipping_state == 'MA' %}selected{% endif %}>MA</option>
+                                        <option value="MT" {% if shipping.shipping_state == 'MT' %}selected{% endif %}>MT</option>
+                                        <option value="MS" {% if shipping.shipping_state == 'MS' %}selected{% endif %}>MS</option>
+                                        <option value="MG" {% if shipping.shipping_state == 'MG' %}selected{% endif %}>MG</option>
+                                        <option value="PA" {% if shipping.shipping_state == 'PA' %}selected{% endif %}>PA</option>
+                                        <option value="PB" {% if shipping.shipping_state == 'PB' %}selected{% endif %}>PB</option>
+                                        <option value="PR" {% if shipping.shipping_state == 'PR' %}selected{% endif %}>PR</option>
+                                        <option value="PE" {% if shipping.shipping_state == 'PE' %}selected{% endif %}>PE</option>
+                                        <option value="PI" {% if shipping.shipping_state == 'PI' %}selected{% endif %}>PI</option>
+                                        <option value="RJ" {% if shipping.shipping_state == 'RJ' %}selected{% endif %}>RJ</option>
+                                        <option value="RN" {% if shipping.shipping_state == 'RN' %}selected{% endif %}>RN</option>
+                                        <option value="RS" {% if shipping.shipping_state == 'RS' %}selected{% endif %}>RS</option>
+                                        <option value="RO" {% if shipping.shipping_state == 'RO' %}selected{% endif %}>RO</option>
+                                        <option value="RR" {% if shipping.shipping_state == 'RR' %}selected{% endif %}>RR</option>
+                                        <option value="SC" {% if shipping.shipping_state == 'SC' %}selected{% endif %}>SC</option>
+                                        <option value="SP" {% if shipping.shipping_state == 'SP' %}selected{% endif %}>SP</option>
+                                        <option value="SE" {% if shipping.shipping_state == 'SE' %}selected{% endif %}>SE</option>
+                                        <option value="TO" {% if shipping.shipping_state == 'TO' %}selected{% endif %}>TO</option>
+                                    </select>
                                 </div>
                                 <div class="col-8">
                                     <label class="form-label">Endereço</label>

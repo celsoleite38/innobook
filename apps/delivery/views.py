@@ -69,6 +69,9 @@ def _shipping_profile(request):
     return render(request, 'delivery/shipping_profile.html', {
         'form': form,
         'profile': profile,
+        'state_valido': profile.state in [
+            uf for uf, _ in form.fields['state'].widget.choices
+        ],
     })
 
 

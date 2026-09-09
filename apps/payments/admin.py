@@ -28,7 +28,8 @@ class OrderAdmin(admin.ModelAdmin):
                        'buyer_email', 'buyer_name')
         }),
         ('Entrega (livro físico)', {
-            'fields': ('shipping_name', 'shipping_zipcode', 'shipping_address',
+            'fields': ('shipping_name', 'shipping_phone', 'shipping_zipcode',
+                       'shipping_address',
                        'shipping_number', 'shipping_district', 'shipping_complement',
                        'shipping_city', 'shipping_state'),
             'classes': ('collapse',)

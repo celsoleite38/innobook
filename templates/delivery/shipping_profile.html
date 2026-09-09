@@ -25,6 +25,14 @@
                 <form method="post">
                     {% csrf_token %}
 
+                    {% if profile.state and not state_valido %}
+                    <div style="background:#fff3cd; border:1px solid #ffe08a; color:#664d03;
+                                padding:10px 14px; border-radius:6px; margin-bottom:16px; font-size:13px;">
+                        <strong>Seu estado salvo ("{{ profile.state }}") não é válido.</strong>
+                        Selecione novamente no campo UF abaixo.
+                    </div>
+                    {% endif %}
+
                     {% for field in form %}
                     <div class="mb-3">
                         <label class="form-label">{{ field.label }}</label>

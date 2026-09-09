@@ -19,6 +19,9 @@ protected/
 # Variáveis de ambiente (NUNCA suba isso!)
 .env
 
+# Certificados SSL (NUNCA suba isso!)
+*.pem
+
 # IDE
 .vscode/
 .idea/
