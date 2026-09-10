@@ -245,11 +245,38 @@
                                 </span>
                             </td>
                             <td class="text-center">
-                                <a href="{% url 'accounts:admin_book_detail' ebook.pk %}"
-                                   class="btn-navy"
-                                   style="padding:5px 14px; font-size:10px;">
-                                    Ver
-                                </a>
+                                <div class="d-inline-flex" style="gap:6px;">
+                                    <a href="{% url 'accounts:admin_book_detail' ebook.pk %}"
+                                       class="btn-navy"
+                                       style="padding:5px 14px; font-size:10px;">
+                                        Ver
+                                    </a>
+                                    <form method="post"
+                                          action="{% url 'accounts:admin_toggle_featured' ebook.pk %}"
+                                          style="display:inline;">
+                                        {% csrf_token %}
+                                        {% if ebook.featured %}
+                                        <button type="submit"
+                                                title="Desmarcar como destaque"
+                                                style="padding:5px 14px; font-size:10px;
+                                                       border-radius:4px; cursor:pointer;
+                                                       background:#c9a84c; color:#1a1a2e;
+                                                       border:0.5px solid #b3923a;
+                                                       font-weight:600;">
+                                            <i class="bi bi-star-fill me-1"></i>Destaque
+                                        </button>
+                                        {% else %}
+                                        <button type="submit"
+                                                title="Marcar como destaque"
+                                                style="padding:5px 14px; font-size:10px;
+                                                       border-radius:4px; cursor:pointer;
+                                                       background:#fff; color:#c9a84c;
+                                                       border:0.5px solid #c9a84c;">
+                                            <i class="bi bi-star me-1"></i>Destaque
+                                        </button>
+                                        {% endif %}
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}

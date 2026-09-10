@@ -99,6 +99,7 @@ class ShippingProfileAdmin(admin.ModelAdmin):
     list_display  = ['producer', 'full_name', 'zipcode', 'city', 'state', 'is_connected', 'uses_editora_account', 'updated_at']
     list_filter   = ['uses_editora_account', 'state']
     search_fields = ['producer__username', 'full_name', 'zipcode']
+    readonly_fields = ['updated_at']
 
     fieldsets = (
         ('Remetente', {

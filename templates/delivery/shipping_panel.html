@@ -22,9 +22,32 @@
     {% if messages %}
     <div class="mb-4">
         {% for message in messages %}
-        <div class="alert alert-{{ message.tags|default:'info' }}" role="alert">
-            {{ message }}
-        </div>
+            {% if message.tags == 'error' or message.tags == 'warning' %}
+            <!-- Destaque Vermelho para Erros e Avisos Importantes -->
+            <div class="alert alert-danger d-flex align-items-center shadow-sm border-0 p-3" 
+                style="background-color: #dc3545; color: #ffffff; border-radius: 6px;" role="alert">
+                <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+                <div>
+                    <strong class="d-block" style="font-size: 14px;">Atenção:</strong>
+                    <span style="font-size: 13px;">{{ message }}</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% elif message.tags == 'success' %}
+            <!-- Mensagem de Sucesso -->
+            <div class="alert alert-success d-flex align-items-center shadow-sm border-0 p-3" 
+                style="background-color: #198754; color: #ffffff; border-radius: 6px;" role="alert">
+                <i class="bi bi-check-circle-fill fs-4 me-3"></i>
+                <div>
+                    <span style="font-size: 13px;">{{ message }}</span>
+                </div>
+            </div>
+            {% else %}
+            <!-- Outras mensagens genéricas -->
+            <div class="alert alert-{{ message.tags|default:'info' }}" role="alert">
+                {{ message }}
+            </div>
+            {% endif %}
         {% endfor %}
     </div>
     {% endif %}
@@ -75,11 +98,10 @@
             </div>
         </div>
         {% if not profile.has_origin_address %}
-        <div class="card-footer text-warning-emphasis"
-             style="font-size:12px; background:#fdf8ee;">
-            <i class="bi bi-exclamation-triangle me-1"></i>
+        <div class="card-footer text-white fw-bold" style="font-size:12px; background:#dc3545;">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
             Você ainda não preencheu o endereço de remetente.
-            <a href="{% url 'delivery:shipping_profile' %}">Clique aqui para preencher</a>.
+            <a href="{% url 'delivery:shipping_profile' %}" class="text-white text-decoration-underline">Clique aqui para preencher</a>.
         </div>
         {% endif %}
     </div>

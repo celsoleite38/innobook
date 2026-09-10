@@ -54,4 +54,5 @@ urlpatterns = [
     path('admin-painel/livros/<int:pk>/', views.admin_book_detail_view, name='admin_book_detail'),
     path('admin-painel/livros/<int:pk>/aprovar/', views.admin_book_approve_view, name='admin_book_approve'),
     path('admin-painel/livros/<int:pk>/rejeitar/', views.admin_book_reject_view, name='admin_book_reject'),
+    path('admin-painel/livros/<int:pk>/toggle-featured/', views.admin_toggle_featured_view, name='admin_toggle_featured'),
 ]

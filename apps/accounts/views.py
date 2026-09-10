@@ -824,3 +824,17 @@ def admin_book_reject_view(request, pk):
 
     messages.success(request, f'"{ebook.title}" foi rejeitado.')
     return redirect('accounts:admin_book_detail', pk=pk)
+
+
+@staff_or_superuser_required
+def admin_toggle_featured_view(request, pk):
+    if request.method != 'POST':
+        return redirect('accounts:admin_books')
+
+    ebook = get_object_or_404(Ebook, pk=pk)
+    ebook.featured = not ebook.featured
+    ebook.save(update_fields=['featured'])
+
+    action = 'destacado' if ebook.featured else 'removido dos destaques'
+    messages.success(request, f'"{ebook.title}" foi {action}.')
+    return redirect('accounts:admin_books')
