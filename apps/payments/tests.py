@@ -304,3 +304,115 @@ class BuyerCancelShippingTests(TestCase):
         self.order.refresh_from_db()
         self.assertEqual(self.order.status, Order.STATUS_PAID)
         self.assertEqual(self.shipment.status, Shipment.STATUS_READY)
+
+
+class ConfirmOrderPhysicalTests(TestCase):
+    """_confirm_order de pedido físico não quebra com AttributeError."""
+
+    def setUp(self):
+        self.autor = _make_user('autor', User.PRODUCER, CPF_AUTOR)
+        self.buyer = _make_user('comprador', User.BUYER, CPF_COMPRADOR)
+        self.ebook = _make_ebook(self.autor)
+        self.shipment = Shipment.objects.create(
+            producer=self.autor, buyer=self.buyer,
+            status=Shipment.STATUS_AWAITING, freight_cost=Decimal('15.90'),
+        )
+        self.order = Order.objects.create(
+            buyer=self.buyer, ebook=self.ebook, variant=FORMAT_PHYSICAL,
+            amount=Decimal('30.00'), shipping_cost=Decimal('15.90'),
+            status=Order.STATUS_PENDING, shipment=self.shipment,
+            buyer_email=self.buyer.email, buyer_name='Comprador',
+        )
+        self.estoque_inicial = self.ebook.physical_stock
+
+    @mock.patch('apps.payments.views.send_new_sale_notification')
+    @mock.patch('apps.payments.views.send_purchase_confirmation')
+    @mock.patch('apps.delivery.melhor_envios.try_auto_generate_label')
+    def test_fisico_com_shipment_confirma_sem_erro(
+            self, mock_label, mock_email, mock_notif):
+        from apps.payments.views import _confirm_order
+
+        _confirm_order(self.order, 'charge_1')
+
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, Order.STATUS_PAID)
+        self.ebook.refresh_from_db()
+        self.assertEqual(self.ebook.physical_stock, self.estoque_inicial - 1)
+        mock_label.assert_called_once_with(self.shipment.pk)
+
+    @mock.patch('apps.payments.views.send_new_sale_notification')
+    @mock.patch('apps.payments.views.send_purchase_confirmation')
+    def test_fisico_sem_shipment_confirma_sem_erro(
+            self, mock_email, mock_notif):
+        from apps.payments.views import _confirm_order
+
+        self.order.shipment = None
+        self.order.save(update_fields=['shipment'])
+
+        _confirm_order(self.order, 'charge_1')
+
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, Order.STATUS_PAID)
+
+
+class AutoConfirmPendingTests(TestCase):
+    """Fase C: auto-confirmação por polling via _try_confirm_pending_orders."""
+
+    def setUp(self):
+        self.autor = _make_user('autor', User.PRODUCER, CPF_AUTOR)
+        self.buyer = _make_user('comprador', User.BUYER, CPF_COMPRADOR)
+        self.ebook = _make_ebook(self.autor)
+        self.order = Order.objects.create(
+            buyer=self.buyer, ebook=self.ebook, variant='digital',
+            amount=Decimal('30.00'), status=Order.STATUS_PENDING,
+            gateway='asaas', gateway_order_id='pay_pendente_1',
+            buyer_email=self.buyer.email, buyer_name='Comprador',
+        )
+
+    @mock.patch('apps.payments.views.get_charge', return_value={'status': 'CONFIRMED'})
+    @mock.patch('apps.payments.views.send_new_sale_notification')
+    @mock.patch('apps.payments.views.send_purchase_confirmation')
+    def test_pedido_pago_confirma_e_gera_token(
+            self, mock_email, mock_notif, mock_charge):
+        from apps.payments.views import _try_confirm_pending_orders
+
+        confirmados = _try_confirm_pending_orders(self.buyer)
+
+        self.assertEqual(confirmados, 1)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, Order.STATUS_PAID)
+        self.assertTrue(self.order.download_tokens.filter(is_active=True).exists())
+
+    @mock.patch('apps.payments.views.get_charge', return_value={'status': 'PENDING'})
+    def test_pedido_nao_pago_permanece_pendente(self, mock_charge):
+        from apps.payments.views import _try_confirm_pending_orders
+
+        confirmados = _try_confirm_pending_orders(self.buyer)
+
+        self.assertEqual(confirmados, 0)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, Order.STATUS_PENDING)
+
+    @mock.patch('apps.payments.views.get_charge', side_effect=Exception('API fora'))
+    def test_falha_na_api_nao_quebra(self, mock_charge):
+        from apps.payments.views import _try_confirm_pending_orders
+
+        confirmados = _try_confirm_pending_orders(self.buyer)
+
+        self.assertEqual(confirmados, 0)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, Order.STATUS_PENDING)
+
+    @mock.patch('apps.payments.views.get_charge', return_value={'status': 'CONFIRMED'})
+    @mock.patch('apps.payments.views.send_new_sale_notification')
+    @mock.patch('apps.payments.views.send_purchase_confirmation')
+    def test_pending_view_chama_helper(
+            self, mock_email, mock_notif, mock_charge):
+        self.client.force_login(self.buyer)
+        response = self.client.get(
+            '/payments/pending/{}/'.format(self.order.order_id)
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, Order.STATUS_PAID)

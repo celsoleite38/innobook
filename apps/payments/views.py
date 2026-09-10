@@ -381,6 +381,9 @@ def success_view(request, order_id):
 @login_required
 def pending_view(request, order_id):
     order = get_object_or_404(Order, order_id=order_id, buyer=request.user)
+    # Confirma na hora se o pagamento já foi quitado (independe do webhook)
+    _try_confirm_pending_orders(request.user)
+    order.refresh_from_db()
     return render(request, 'payments/pending.html', {'order': order})
 
 
@@ -512,13 +515,12 @@ def _confirm_order(order, charge_id):
             ebook.save(update_fields=['physical_stock'])
 
         # Gera etiqueta de frete automaticamente em thread separada
-        shipment = order.shipments.first()
-        if shipment:
+        if order.shipment:
             import threading
             from apps.delivery.melhor_envios import try_auto_generate_label
             t = threading.Thread(
                 target=try_auto_generate_label,
-                args=(shipment.pk,),
+                args=(order.shipment_id,),
                 daemon=True,
             )
             t.start()
@@ -534,6 +536,35 @@ def _confirm_order(order, charge_id):
         send_new_sale_notification(order)
     except Exception as e:
         print(f'Erro email: {e}')
+
+
+def _try_confirm_pending_orders(user):
+    """
+    Consulta o Asaas sobre pedidos pendentes do usuário e confirma
+    automaticamente os que já foram pagos (CONFIRMED/RECEIVED).
+
+    Medida defensiva: não depende do webhook — ao abrir o dashboard ou a
+    página do pedido pendente, confirma na hora qualquer cobrança quitada.
+    Nunca levanta exceção (falha de API não quebra a página).
+    """
+    pending_orders = user.orders.filter(
+        status=Order.STATUS_PENDING,
+        gateway='asaas',
+    ).exclude(gateway_order_id='').select_related('ebook')
+
+    confirmed = 0
+    for order in pending_orders:
+        try:
+            charge = get_charge(order.gateway_order_id)
+        except Exception:
+            continue
+        if charge.get('status') in ('CONFIRMED', 'RECEIVED'):
+            try:
+                _confirm_order(order, order.gateway_order_id)
+                confirmed += 1
+            except Exception as e:
+                print(f'Erro ao confirmar pedido {order.pk}: {e}')
+    return confirmed
 
 @login_required
 def cart_checkout_view(request):

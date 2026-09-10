@@ -430,6 +430,10 @@ def dashboard_view(request):
     # Compras do usuário
     orders = user.orders.filter(status='paid').select_related('ebook')
 
+    # Confirma na hora cobranças pendentes já quitadas (independe do webhook)
+    from apps.payments.views import _try_confirm_pending_orders
+    _try_confirm_pending_orders(user)
+
     # Garante token de download válido para eBooks digitais/combo
     from apps.delivery.utils import get_or_create_download_token
     for order in orders:
