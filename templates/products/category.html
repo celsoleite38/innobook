@@ -126,11 +126,14 @@
                             </span>
                             {% endif %}
                             {% include 'partials/ebook_card_prices.html' %}
-                            <a href="{% url 'products:detail' ebook.slug %}"
-                               class="btn-navy"
-                               style="padding:6px 16px; font-size:10px;">
-                               Ver mais
-                            </a>
+                            <div class="d-flex align-items-center gap-2">
+                                {% include 'partials/ebook_card_share.html' %}
+                                <a href="{% url 'products:detail' ebook.slug %}"
+                                   class="btn-navy"
+                                   style="padding:6px 16px; font-size:10px;">
+                                   Ver mais
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>

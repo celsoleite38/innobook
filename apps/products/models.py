@@ -296,6 +296,9 @@ class Ebook(models.Model):
             self.slug = slugify(self.title)
         super().save(*args, **kwargs)
 
+    def get_absolute_url(self):
+        return f'/ebooks/{self.slug}/'
+
     def get_price(self):
         """Retorna o preço promocional se existir, senão o normal."""
         if self.discount_price:

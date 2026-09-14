@@ -186,6 +186,82 @@
             font-weight: 500;
         }
 
+        /* Botão de compartilhar eBook */
+        .ebook-share { position: relative; }
+        .ebook-share-btn {
+            padding: 0;
+            width: 28px;
+            height: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            line-height: 1;
+            color: var(--text-muted-custom);
+            background: transparent;
+            border: 1px solid #d0c8bc;
+            border-radius: 50%;
+            transition: color .2s, border-color .2s, background .2s;
+        }
+        .ebook-share-btn:hover,
+        .ebook-share-btn:focus {
+            color: var(--navy);
+            border-color: var(--navy);
+            background: #f5f0e8;
+        }
+        .ebook-share-menu {
+            min-width: 220px;
+            border: 0.5px solid #e0d8cc;
+            border-radius: 6px;
+            box-shadow: 0 12px 32px rgba(26,26,46,0.15);
+            padding: 6px;
+        }
+        .ebook-share-menu .dropdown-header {
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-muted-custom);
+            padding: 6px 10px;
+        }
+        .ebook-share-menu .dropdown-item {
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 4px;
+            color: #1a1a2e;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        .ebook-share-menu .dropdown-item:hover {
+            background: #f5f0e8;
+        }
+        .ebook-share-menu .dropdown-item i {
+            font-size: 15px;
+            width: 18px;
+            text-align: center;
+        }
+        .ebook-share-toast {
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%) translateY(4px);
+            background: #1a1a2e;
+            color: #f5f0e8;
+            font-size: 11px;
+            padding: 6px 12px;
+            border-radius: 4px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .25s, transform .25s;
+            z-index: 1080;
+        }
+        .ebook-share-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
         /* Badge dourado */
         .badge-gold {
             background: var(--gold);

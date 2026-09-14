@@ -1,0 +1,125 @@
+<div class="dropdown ebook-share" data-title="{{ ebook.title|escapejs }}" data-url="{{ ebook.get_absolute_url }}">
+    <button class="btn ebook-share-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Compartilhar">
+        <i class="bi bi-share-fill"></i>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end ebook-share-menu">
+        <li><span class="dropdown-header">Compartilhar</span></li>
+        <li>
+            <button class="dropdown-item ebook-share-copy" type="button">
+                <i class="bi bi-link-45deg"></i> Copiar link
+            </button>
+        </li>
+        <li>
+            <button class="dropdown-item ebook-share-wa" type="button">
+                <i class="bi bi-whatsapp" style="color:#25D366;"></i> WhatsApp
+            </button>
+        </li>
+        <li>
+            <button class="dropdown-item ebook-share-tg" type="button">
+                <i class="bi bi-telegram" style="color:#0088cc;"></i> Telegram
+            </button>
+        </li>
+        <li>
+            <button class="dropdown-item ebook-share-ig" type="button">
+                <i class="bi bi-instagram" style="color:#E4405F;"></i> Instagram
+            </button>
+        </li>
+        <li>
+            <button class="dropdown-item ebook-share-fb" type="button">
+                <i class="bi bi-facebook" style="color:#1877F2;"></i> Facebook
+            </button>
+        </li>
+        <li>
+            <button class="dropdown-item ebook-share-x" type="button">
+                <i class="bi bi-twitter-x"></i> X (Twitter)
+            </button>
+        </li>
+    </ul>
+</div>
+
+<script>
+(function () {
+    if (window.__ebookShareInit) return;
+    window.__ebookShareInit = true;
+
+    function showToast(wrapper, message) {
+        if (wrapper.__toastTimer) { clearTimeout(wrapper.__toastTimer); }
+        var toast = wrapper.querySelector('.ebook-share-toast');
+        if (!toast) {
+            toast = document.createElement('span');
+            toast.className = 'ebook-share-toast';
+            wrapper.appendChild(toast);
+        }
+        toast.textContent = message;
+        toast.classList.add('show');
+        wrapper.__toastTimer = setTimeout(function () {
+            toast.classList.remove('show');
+        }, 2500);
+    }
+
+    function copyText(wrapper, text, message) {
+        var done = function () { showToast(wrapper, message || 'Link copiado!'); };
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(done, function () {
+                showToast(wrapper, 'Falhou ao copiar');
+            });
+        } else {
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+                document.execCommand('copy');
+                done();
+            } catch (err) {
+                showToast(wrapper, 'Falhou ao copiar');
+            }
+            document.body.removeChild(ta);
+        }
+    }
+
+    function openShare(url) {
+        var a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest(
+            '.ebook-share-copy, .ebook-share-wa, .ebook-share-tg, ' +
+            '.ebook-share-ig, .ebook-share-fb, .ebook-share-x'
+        );
+        if (!btn) return;
+
+        var wrapper = btn.closest('.ebook-share');
+        if (!wrapper) return;
+
+        var url = window.location.origin + wrapper.getAttribute('data-url');
+        var title = wrapper.getAttribute('data-title') || 'E-book';
+        var encodedUrl = encodeURIComponent(url);
+        var encodedTitle = encodeURIComponent(title);
+        var msg = encodeURIComponent('Conheça meu ebook "' + title + '"! Acesse: ' + url);
+
+        if (btn.classList.contains('ebook-share-copy')) {
+            copyText(wrapper, url);
+        } else if (btn.classList.contains('ebook-share-wa')) {
+            openShare('https://wa.me/?text=' + msg);
+        } else if (btn.classList.contains('ebook-share-tg')) {
+            openShare('https://t.me/share/url?url=' + encodedUrl + '&text=' + encodedTitle);
+        } else if (btn.classList.contains('ebook-share-ig')) {
+            openShare('https://www.instagram.com/');
+        } else if (btn.classList.contains('ebook-share-fb')) {
+            openShare('https://www.facebook.com/sharer/sharer.php?u=' + encodedUrl);
+        } else if (btn.classList.contains('ebook-share-x')) {
+            openShare('https://twitter.com/intent/tweet?text=' + encodedTitle + '&url=' + encodedUrl);
+        }
+    });
+})();
+</script>

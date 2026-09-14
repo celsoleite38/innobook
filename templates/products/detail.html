@@ -326,9 +326,12 @@
                             </div>
                             <div class="d-flex align-items-center justify-content-between">
                                 <span class="ebook-price">R$ {{ item.get_price }}</span>
-                                <a href="{% url 'products:detail' item.slug %}" class="btn-navy" style="padding:5px 14px; font-size:10px;">
-                                    Ver
-                                </a>
+                                <div class="d-flex align-items-center gap-2">
+                                    {% include 'partials/ebook_card_share.html' with ebook=item %}
+                                    <a href="{% url 'products:detail' item.slug %}" class="btn-navy" style="padding:5px 14px; font-size:10px;">
+                                        Ver
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
